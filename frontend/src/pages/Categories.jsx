@@ -13,6 +13,8 @@ const Categories = () => {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({ name: '', description: '' });
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     loadCategories();
@@ -48,6 +50,7 @@ const Categories = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       if (editingCategory) {
         await categoriesAPI.update(editingCategory.id, formData);
@@ -60,17 +63,22 @@ const Categories = () => {
       loadCategories();
     } catch (error) {
       toast.error(error.message || 'Failed to save category');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this category?')) return;
+    setDeletingId(id);
     try {
       await categoriesAPI.delete(id);
       toast.success('Category deleted successfully');
       loadCategories();
     } catch (error) {
       toast.error('Failed to delete category');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -206,11 +214,15 @@ const Categories = () => {
                       </span>
                     </td>
                     <td>
-                      <button onClick={() => openModal(category)} className="table-action-btn">
+                      <button onClick={() => openModal(category)} className="table-action-btn" disabled={saving || deletingId}>
                         <i className="ti ti-edit"></i>
                       </button>
-                      <button onClick={() => handleDelete(category.id)} className="table-action-btn danger">
-                        <i className="ti ti-trash"></i>
+                      <button onClick={() => handleDelete(category.id)} className="table-action-btn danger" disabled={deletingId === category.id}>
+                        {deletingId === category.id ? (
+                          <span className="spinner-border spinner-border-sm"></span>
+                        ) : (
+                          <i className="ti ti-trash"></i>
+                        )}
                       </button>
                     </td>
                   </tr>
@@ -259,11 +271,18 @@ const Categories = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" onClick={closeModal} className="btn btn-outline-secondary">
+                <button type="button" onClick={closeModal} className="btn btn-outline-secondary" disabled={saving}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingCategory ? 'Update' : 'Create'}
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      {editingCategory ? 'Updating...' : 'Creating...'}
+                    </>
+                  ) : (
+                    editingCategory ? 'Update' : 'Create'
+                  )}
                 </button>
               </div>
             </form>

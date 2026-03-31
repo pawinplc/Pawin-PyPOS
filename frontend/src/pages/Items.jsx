@@ -20,6 +20,8 @@ const Items = () => {
     name: '', sku: '', category_id: '',
     unit_price: '', cost_price: '', quantity: '', min_stock_level: ''
   });
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -69,6 +71,7 @@ const Items = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSaving(true);
     try {
       const data = {
         ...formData,
@@ -90,17 +93,22 @@ const Items = () => {
       loadData();
     } catch (error) {
       toast.error(error.message || 'Failed to save item');
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this item?')) return;
+    setDeletingId(id);
     try {
       await itemsAPI.delete(id);
       toast.success('Item deleted successfully');
       loadData();
     } catch (error) {
       toast.error('Failed to delete item');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -313,11 +321,15 @@ const Items = () => {
                     <td className={item.is_low_stock ? 'text-danger fw-semibold' : ''}>{item.quantity}</td>
                     <td>{item.min_stock_level}</td>
                     <td>
-                      <button onClick={() => openModal(item)} className="table-action-btn">
+                      <button onClick={() => openModal(item)} className="table-action-btn" disabled={saving || deletingId}>
                         <i className="ti ti-edit"></i>
                       </button>
-                      <button onClick={() => handleDelete(item.id)} className="table-action-btn danger">
-                        <i className="ti ti-trash"></i>
+                      <button onClick={() => handleDelete(item.id)} className="table-action-btn danger" disabled={deletingId === item.id}>
+                        {deletingId === item.id ? (
+                          <span className="spinner-border spinner-border-sm"></span>
+                        ) : (
+                          <i className="ti ti-trash"></i>
+                        )}
                       </button>
                     </td>
                   </tr>
@@ -441,11 +453,18 @@ const Items = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" onClick={closeModal} className="btn btn-outline-secondary">
+                <button type="button" onClick={closeModal} className="btn btn-outline-secondary" disabled={saving}>
                   Cancel
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  {editingItem ? 'Update' : 'Create'}
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      {editingItem ? 'Updating...' : 'Creating...'}
+                    </>
+                  ) : (
+                    editingItem ? 'Update' : 'Create'
+                  )}
                 </button>
               </div>
             </form>

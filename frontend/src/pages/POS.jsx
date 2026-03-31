@@ -16,6 +16,7 @@ const POS = () => {
   const [customerPayment, setCustomerPayment] = useState('');
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState(null);
+  const [addingToCart, setAddingToCart] = useState(null);
 
   useEffect(() => {
     loadData();
@@ -71,28 +72,34 @@ const POS = () => {
   }, [search, selectedCategory]);
 
   const addToCart = (item) => {
-    const existingItem = cart.find(cartItem => cartItem.item_id === item.id);
-    if (existingItem) {
-      if (existingItem.quantity >= item.quantity && item.quantity > 0) {
-        setCart(cart.map(cartItem =>
-          cartItem.item_id === item.id
-            ? { ...cartItem, quantity: cartItem.quantity + 1, subtotal: (cartItem.quantity + 1) * cartItem.unit_price }
-            : cartItem
-        ));
+    setAddingToCart(item.id);
+    setTimeout(() => {
+      const existingItem = cart.find(cartItem => cartItem.item_id === item.id);
+      if (existingItem) {
+        if (existingItem.quantity >= item.quantity && item.quantity > 0) {
+          setCart(cart.map(cartItem =>
+            cartItem.item_id === item.id
+              ? { ...cartItem, quantity: cartItem.quantity + 1, subtotal: (cartItem.quantity + 1) * cartItem.unit_price }
+              : cartItem
+          ));
+          toast.success(`Added another ${item.name}`);
+        } else {
+          toast.error('Not enough stock');
+        }
       } else {
-        toast.error('Not enough stock');
+        setCart([...cart, {
+          item_id: item.id,
+          name: item.name,
+          sku: item.sku,
+          unit_price: parseFloat(item.unit_price),
+          quantity: 1,
+          subtotal: parseFloat(item.unit_price),
+          max_qty: item.quantity
+        }]);
+        toast.success(`Added ${item.name} to cart`);
       }
-    } else {
-      setCart([...cart, {
-        item_id: item.id,
-        name: item.name,
-        sku: item.sku,
-        unit_price: parseFloat(item.unit_price),
-        quantity: 1,
-        subtotal: parseFloat(item.unit_price),
-        max_qty: item.quantity
-      }]);
-    }
+      setAddingToCart(null);
+    }, 150);
   };
 
   const updateQuantity = (itemId, delta) => {
@@ -210,11 +217,11 @@ const POS = () => {
                 {serviceItems.map(service => (
                   <div 
                     key={service.id} 
-                    className="service-item-card p-3"
+                    className={`service-item-card p-3 ${addingToCart === service.id ? 'adding-to-cart' : ''}`}
                     onClick={() => addToCart(service)}
                     style={{
                       background: 'linear-gradient(135deg, rgba(230, 98, 57, 0.1) 0%, rgba(230, 98, 57, 0.02) 100%)',
-                      border: '2px dashed var(--primary)',
+                      border: addingToCart === service.id ? '2px solid var(--primary)' : '2px dashed var(--primary)',
                       borderRadius: '12px',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
@@ -226,9 +233,16 @@ const POS = () => {
                       alignItems: 'center',
                       textAlign: 'center',
                       flex: '1',
-                      maxWidth: '250px'
+                      maxWidth: '250px',
+                      position: 'relative',
+                      opacity: addingToCart === service.id ? 0.7 : 1
                     }}
                   >
+                    {addingToCart === service.id && (
+                      <div style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }}>
+                        <span className="spinner-border spinner-border-sm"></span>
+                      </div>
+                    )}
                     <div className="mb-2">
                       <i className={`ti ${service.name.toLowerCase().includes('print') ? 'ti-printer' : 'ti-scan'}`} style={{ fontSize: '32px', color: 'var(--primary)' }}></i>
                     </div>
@@ -274,9 +288,15 @@ const POS = () => {
           {items.map(item => (
             <div 
               key={item.id} 
-              className="pos-item-card" 
+              className={`pos-item-card ${addingToCart === item.id ? 'adding-to-cart' : ''}`}
               onClick={() => addToCart(item)}
+              style={{ position: 'relative' }}
             >
+              {addingToCart === item.id && (
+                <div className="add-to-cart-spinner">
+                  <span className="spinner-border spinner-border-sm"></span>
+                </div>
+              )}
               <div className="pos-item-name">{item.name}</div>
               <div className="pos-item-price">TSH{parseFloat(item.unit_price).toLocaleString()}</div>
               <small className="text-muted">Stock: {item.quantity}</small>

@@ -13,6 +13,7 @@ const Stock = () => {
     item_id: '', quantity: '', reference: '', notes: ''
   });
   const [search, setSearch] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -46,6 +47,7 @@ const Stock = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitting(true);
     try {
       const data = {
         item_id: parseInt(formData.item_id),
@@ -68,6 +70,8 @@ const Stock = () => {
       loadData();
     } catch (error) {
       toast.error(error.message || 'Failed to process stock movement');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -298,11 +302,18 @@ const Stock = () => {
                 </div>
               </div>
               <div className="modal-footer">
-                <button type="button" onClick={closeModal} className="btn btn-outline-secondary">
+                <button type="button" onClick={closeModal} className="btn btn-outline-secondary" disabled={submitting}>
                   Cancel
                 </button>
-                <button type="submit" className={`btn btn-${movementType === 'in' ? 'success' : movementType === 'out' ? 'danger' : 'warning'}`} style={{ color: movementType === 'adjustment' ? 'white' : undefined }}>
-                  Confirm
+                <button type="submit" className={`btn btn-${movementType === 'in' ? 'success' : movementType === 'out' ? 'danger' : 'warning'}`} style={{ color: movementType === 'adjustment' ? 'white' : undefined }} disabled={submitting}>
+                  {submitting ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Processing...
+                    </>
+                  ) : (
+                    'Confirm'
+                  )}
                 </button>
               </div>
             </form>

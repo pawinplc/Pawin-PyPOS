@@ -1,541 +1,315 @@
-# PyPOS - University Stationery Inventory & POS System
+# Pawin PyPOS - University Stationery Inventory & POS System
 
-A modern, responsive inventory management and point-of-sale system designed specifically for university stationery stores.
+![PyPOS Banner](https://img.shields.io/badge/PyPOS-v1.0.0-E66239?style=for-the-badge&logo=shopping-cart)
 
-![PyPOS Dashboard](https://img.shields.io/badge/React-Vite-brightgreen) ![Supabase](https://img.shields.io/badge/Database-Supabase-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+A modern Point of Sale and Inventory Management System designed for university stationery stores, built with React and Supabase.
 
----
+## 🔗 Links
 
-## Table of Contents
+- **Live Demo**: [Pawin PyPOS](https://pawin-pypos.vercel.app)
+- **GitHub Repository**: [github.com/pawinplc/Pawin-PyPOS](https://github.com/pawinplc/Pawin-PyPOS)
 
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Quick Start](#quick-start)
-  - [Prerequisites](#prerequisites)
-  - [Supabase Setup](#supabase-setup)
-  - [Frontend Setup](#frontend-setup)
-- [Database Schema](#database-schema)
-- [Key Terms](#key-terms)
-- [Features Guide](#features-guide)
-  - [Dashboard](#dashboard)
-  - [Point of Sale (POS)](#point-of-sale-pos)
-  - [Items Management](#items-management)
-  - [Categories Management](#categories-management)
-  - [Stock Management](#stock-management)
-  - [Sales History](#sales-history)
-  - [Reports](#reports)
-  - [User Management](#user-management)
-- [Import/Export](#importexport)
-- [Project Structure](#project-structure)
-- [Troubleshooting](#troubleshooting)
+## ✨ Features
 
----
+### Core Features
+- **Point of Sale (POS)** - Fast checkout with cart management, customer payment tracking, and change calculation
+- **Inventory Management** - Track stock levels, stock movements (in/out/adjustments)
+- **Categories Management** - Organize items by category with CSV/XLS import/export
+- **Items Management** - Full CRUD operations with SKU tracking, bulk import/export
+- **Sales History** - View all transactions with detailed receipts
+- **Reports** - Daily, weekly, monthly, yearly sales reports with export functionality
+- **Stock Alerts** - Low stock notifications to prevent stockouts
+- **Dark/Light Mode** - User preference with theme toggle
+- **Responsive Design** - Works on desktop and mobile devices
 
-## Features
+### Special Features
+- **Stationery Services** - Printing & Scanning services section in POS
+- **Multi-period Sales View** - Filter sales by Today, This Week, This Month, This Year
+- **Notification System** - Real-time alerts for low stock and important events
+- **Calculator Integration** - Customer payment calculation with change display
+- **Export Reports** - Export sales data to Excel with proper formatting
 
-- **Dashboard** - Real-time stats, recent sales, low stock alerts
-- **Point of Sale (POS)** - Fast checkout with barcode support
-- **Items Management** - Add, edit, delete products with SKU tracking
-- **Categories Management** - Organize products by category
-- **Stock Management** - Track stock in/out/adjustments
-- **Sales History** - View all transactions with receipt details
-- **Reports** - Daily/monthly sales, stock arrivals
-- **User Management** - Admin and staff roles
-- **CSV/XLS Import** - Bulk upload items and categories
-- **Responsive Design** - Works on desktop and mobile
-- **Multiple Currency Support** - Configured for TSH (Tanzanian Shilling)
+## 🛠️ Technology Stack
 
----
+### Frontend
+| Technology | Version | Purpose |
+|------------|---------|---------|
+| React | 18.x | UI Framework |
+| Vite | 5.x | Build Tool |
+| React Router | 6.x | Client-side Routing |
+| Supabase JS | 2.x | Backend as a Service |
+| XLSX | Latest | Excel Export |
+| React Hot Toast | Latest | Notifications |
 
-## Tech Stack
+### Backend & Database
+| Technology | Purpose |
+|-----------|---------|
+| Supabase | PostgreSQL Database + Auth + Storage |
+| PostgreSQL | Relational Database |
 
-| Layer | Technology |
-|-------|------------|
-| **Frontend** | React 18 + Vite |
-| **Styling** | Custom CSS (InApp Design) |
-| **Database** | Supabase (PostgreSQL) |
-| **Authentication** | Supabase Auth |
-| **Icons** | Tabler Icons |
-| **Excel/CSV** | xlsx library |
+### Design & Icons
+| Technology | Purpose |
+|-----------|---------|
+| Tabler Icons | Icon Library |
+| Google Fonts (Poppins) | Typography |
+| CSS Variables | Theme System |
 
----
+## 📊 System Architecture
 
-## Quick Start
+### Data Flow
+
+```mermaid
+graph TD
+    A[User Browser] -->|HTTPS| B[React Frontend]
+    B -->|API Calls| C[Supabase API]
+    C -->|Queries| D[(PostgreSQL Database)]
+    
+    E[POS Module] -->|Sale Data| C
+    F[Inventory Module] -->|Stock Updates| C
+    G[Reports Module] -->|Analytics Queries| C
+    
+    C -->|Auth Token| H[(Auth Users)]
+    C -->|Item Data| I[(Items Table)]
+    C -->|Category Data| J[(Categories Table)]
+    C -->|Sale Data| K[(Sales Table)]
+    C -->|Movement Data| L[(Stock Movements)]
+```
+
+### User Flow
+
+```mermaid
+graph LR
+    A[Login] --> B{Authenticate}
+    B -->|Success| C[Dashboard]
+    B -->|Failed| A
+    
+    C --> D[POS]
+    C --> E[Items]
+    C --> F[Categories]
+    C --> G[Stock]
+    C --> H[Sales]
+    C --> I[Reports]
+    
+    D -->|Complete Sale| J[(Sales DB)]
+    E -->|CRUD| I
+    F -->|CRUD| J
+    G -->|Stock In/Out| L[(Movements DB)]
+```
+
+## 📁 Database Schema
+
+```mermaid
+erDiagram
+    categories ||--o{ items : "has"
+    items ||--o{ sale_items : "sold_in"
+    sales ||--o{ sale_items : "contains"
+    
+    categories {
+        serial id PK
+        varchar name
+        text description
+        timestamp created_at
+    }
+    
+    items {
+        serial id PK
+        varchar name
+        varchar sku
+        int category_id FK
+        decimal unit_price
+        decimal cost_price
+        int quantity
+        int min_stock_level
+        boolean is_active
+        timestamp created_at
+    }
+    
+    sales {
+        serial id PK
+        uuid cashier_id
+        decimal total_amount
+        decimal final_amount
+        decimal discount_amount
+        varchar payment_method
+        varchar customer_name
+        timestamp created_at
+    }
+    
+    sale_items {
+        serial id PK
+        int sale_id FK
+        int item_id FK
+        int quantity
+        decimal unit_price
+        decimal subtotal
+    }
+    
+    stock_movements {
+        serial id PK
+        int item_id FK
+        varchar movement_type
+        int quantity
+        varchar reference
+        text notes
+        uuid user_id
+        timestamp created_at
+    }
+```
+
+## 🎯 Module Descriptions
+
+### 1. Dashboard
+- Overview of system statistics
+- Recent sales widget
+- Low stock alerts
+- Quick action buttons
+
+### 2. Point of Sale (POS)
+- Service items display (Printing/Scanning)
+- Product grid with category filtering
+- Shopping cart with quantity management
+- Customer payment input
+- Change calculation display
+- Receipt generation
+
+### 3. Items Management
+- Add/Edit/Delete items
+- SKU tracking (Stock Keeping Unit)
+- Category assignment
+- Price and stock management
+- CSV/XLS import functionality
+- Export to Excel
+
+### 4. Categories Management
+- Create/Edit/Delete categories
+- Items count per category
+- CSV import support
+
+### 5. Stock Management
+- Stock In operations (receive inventory)
+- Stock Out operations (dispatch inventory)
+- Stock Adjustments (corrections)
+- Movement history tracking
+- Stock status indicators (In Stock/Low Stock/Out of Stock)
+
+### 6. Sales History
+- View all transactions
+- Filter by period (Today/Week/Month/Year)
+- Receipt details modal
+- Category breakdown per sale
+
+### 7. Reports
+- Sales analytics
+- Daily sales export
+- Monthly sales export
+- Stock arrivals report
+- Export all reports to Excel
+
+### 8. Notifications
+- Low stock alerts
+- Out of stock warnings
+- Today's sales summary
+- Large transaction highlights
+
+### 9. Account Settings
+- User profile information
+- Password change functionality
+- System information
+
+## 🚀 Installation & Setup
 
 ### Prerequisites
+- Node.js 18+
+- npm or yarn
+- Supabase account
+- Git
 
-1. Node.js 18+ installed
-2. Supabase account (free tier available)
-
-### Step 1: Create Supabase Project
-
-1. Go to [supabase.com](https://supabase.com) and sign up
-2. Click **New Project**
-3. Enter project details:
-   - **Name**: PyPOS Stationery
-   - **Database Password**: (remember this!)
-   - **Region**: Choose closest to you
-4. Wait for project to be created (~2 minutes)
-
-### Step 2: Setup Database Tables
-
-Go to **SQL Editor** in your Supabase dashboard and run the following SQL:
-
-```sql
--- ============================================
--- STEP 1: Disable Row Level Security
--- ============================================
-ALTER TABLE public.users DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.categories DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.items DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.stock_movements DISABLE ROW LEVEL SECURITY;
-ALTER TABLE public.sales DISABLE ROW LEVEL SECURITY;
-
--- Grant permissions
-GRANT ALL ON public.users TO authenticated, anon, service_role;
-GRANT ALL ON public.categories TO authenticated, anon, service_role;
-GRANT ALL ON public.items TO authenticated, anon, service_role;
-GRANT ALL ON public.stock_movements TO authenticated, anon, service_role;
-GRANT ALL ON public.sales TO authenticated, anon, service_role;
-
--- ============================================
--- STEP 2: Create sale_items table
--- ============================================
-CREATE TABLE IF NOT EXISTS public.sale_items (
-  id SERIAL PRIMARY KEY,
-  sale_id INTEGER NOT NULL,
-  item_id INTEGER NOT NULL,
-  quantity INTEGER NOT NULL DEFAULT 1,
-  unit_price DECIMAL(12, 2) NOT NULL,
-  subtotal DECIMAL(12, 2) NOT NULL,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
-ALTER TABLE public.sale_items DISABLE ROW LEVEL SECURITY;
-GRANT ALL ON public.sale_items TO authenticated, anon, service_role;
-
--- ============================================
--- STEP 3: Insert Sample Categories
--- ============================================
-INSERT INTO public.categories (name, description) VALUES
-('Pens & Pencils', 'All types of pens, pencils, markers, and highlighters'),
-('Notebooks', 'Exercise books, spiral notebooks, and writing pads'),
-('Paper Products', 'A4 paper, sticky notes, sticky tabs, and paper pads'),
-('Office Supplies', 'Staplers, clips, tape, scissors, and rulers'),
-('Art Supplies', 'Paint, brushes, sketch pads, and craft materials'),
-('Files & Folders', 'Ring binders, file folders, and document wallets'),
-('Desk Accessories', 'Desk organizers, pen holders, and mouse pads'),
-('Technology', 'USB drives, headphones, calculators, and batteries');
-
--- ============================================
--- STEP 4: Insert Sample Items (Prices in TSH)
--- ============================================
-INSERT INTO public.items (name, sku, category_id, unit_price, cost_price, quantity, min_stock_level, barcode) VALUES
--- Pens & Pencils
-('Blue Ballpoint Pen (10 pack)', 'PEN-001', 1, 3500, 1800, 150, 20, '8901234567890'),
-('Black Gel Pen (5 pack)', 'PEN-002', 1, 4500, 2200, 120, 15, '8901234567891'),
-('HB Pencil (12 pack)', 'PEN-003', 1, 2500, 1200, 200, 30, '8901234567892'),
-('Highlighters Set (6 colors)', 'PEN-004', 1, 5500, 2800, 80, 10, '8901234567893'),
-('Permanent Marker (Black)', 'PEN-005', 1, 2800, 1400, 90, 15, '8901234567894'),
-
--- Notebooks
-('A5 Exercise Book (100 pages)', 'NB-001', 2, 1800, 900, 300, 50, '8901234568001'),
-('A4 Spiral Notebook', 'NB-002', 2, 3500, 1800, 150, 25, '8901234568002'),
-('Grid Notebook A4', 'NB-003', 2, 4200, 2100, 100, 20, '8901234568003'),
-
--- Paper Products
-('A4 Paper (500 sheets)', 'PAP-001', 3, 12000, 6500, 100, 20, '8901234569001'),
-('Sticky Notes 3x3 (12 pack)', 'PAP-002', 3, 4500, 2200, 200, 40, '8901234569002'),
-
--- Office Supplies
-('Paper Clips (100 pack)', 'OFF-001', 4, 2200, 1100, 250, 40, '8901234570001'),
-('Stapler with staples', 'OFF-002', 4, 6500, 3200, 75, 15, '8901234570002'),
-
--- Technology
-('USB Flash Drive 32GB', 'TEC-001', 8, 19900, 12000, 50, 10, '8901234574001'),
-('AA Batteries (8 pack)', 'TEC-003', 8, 8500, 4500, 100, 20, '8901234574003');
+### Clone the Repository
+```bash
+git clone https://github.com/pawinplc/Pawin-PyPOS.git
+cd Pawin-PyPOS
 ```
 
-### Step 3: Create Authenticated User
-
-1. Go to **Authentication** in Supabase dashboard
-2. Click **Add user** (or **Create user**)
-3. Enter email and password:
-   - **Email**: `admin@pypos.com`
-   - **Password**: `admin123`
-4. Click **Create user**
-5. Copy the **User ID** (UUID) from the user list
-
-### Step 4: Configure Frontend
-
-Create or update `frontend/.env`:
-
-```env
-VITE_SUPABASE_URL=https://your-project-id.supabase.co
-VITE_SUPABASE_ANON_KEY=your-anon-public-key
-```
-
-Get these values from: **Settings > API** in your Supabase dashboard.
-
-### Step 5: Install and Run
-
+### Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
 
-### Step 6: Access the App
+### Supabase Setup
+1. Create a new Supabase project
+2. Run the SQL scripts in `/database/supabase_setup.sql`
+3. Copy `.env.example` to `.env`
+4. Add your Supabase URL and anon key
 
-Open your browser to: **http://localhost:5173**
-
-Login with your created user credentials.
-
----
-
-## Database Schema
-
-```
-┌─────────────────┐
-│    categories    │
-├─────────────────┤
-│ id (PK)         │
-│ name            │
-│ description     │
-│ created_at      │
-└────────┬────────┘
-         │ 1:N
-         ▼
-┌─────────────────┐
-│      items       │
-├─────────────────┤
-│ id (PK)         │
-│ category_id (FK) │
-│ sku (unique)     │  ◄── SKU = Stock Keeping Unit
-│ name             │
-│ unit_price       │  ◄── Price in TSH
-│ cost_price       │
-│ quantity         │  ◄── Current stock
-│ min_stock_level  │  ◄── Low stock alert threshold
-│ barcode          │
-│ description      │
-│ is_active        │
-│ created_at       │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐     ┌─────────────────┐
-│   sales         │     │   sale_items    │
-├─────────────────┤     ├─────────────────┤
-│ id (PK)         │────▶│ sale_id (FK)    │
-│ cashier_id      │     │ item_id (FK)    │
-│ total_amount    │     │ quantity        │
-│ discount_amount │     │ unit_price      │
-│ final_amount   │     │ subtotal        │
-│ payment_method │     └─────────────────┘
-│ created_at     │
-└─────────────────┘
-
-┌─────────────────────┐
-│  stock_movements   │
-├─────────────────────┤
-│ id (PK)             │
-│ item_id (FK)        │
-│ movement_type       │  ◄── 'in', 'out', 'adjustment'
-│ quantity            │
-│ reference           │
-│ notes              │
-│ user_id            │
-│ created_at         │
-└─────────────────────┘
+### Environment Variables
+Create a `.env` file in the `frontend` directory:
+```env
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 ```
 
----
+## 📱 User Guide
 
-## Key Terms
+### Making a Sale
+1. Go to POS page
+2. Select items from grid or use stationery services
+3. Adjust quantities if needed
+4. Enter customer payment amount
+5. Click "Complete Sale"
+6. Provide change to customer
 
-### SKU (Stock Keeping Unit)
-**SKU** is a unique identifier assigned to each product in your inventory. 
+### Managing Stock
+1. Go to Stock page
+2. Click "Stock In" for new inventory
+3. Select item, enter quantity and reference
+4. Click "Confirm"
+5. Stock levels update automatically
 
-Examples:
-- `PEN-001` - Blue Ballpoint Pen
-- `NB-002` - A4 Spiral Notebook
-- `PAP-001` - A4 Paper Pack
+### Viewing Reports
+1. Go to Reports page
+2. Select date range
+3. Click export buttons for Excel download
 
-Benefits of SKUs:
-- Easy product identification
-- Fast search and lookup
-- Inventory tracking
-- Barcode integration
+## 🔐 Security Features
 
-### TSH (Tanzanian Shilling)
-The default currency. Configure in code by changing the currency symbol displayed throughout the app.
+- Supabase Authentication (email/password)
+- Row Level Security (RLS) support
+- Session management
+- Secure API keys
 
-### Categories
-Top-level organization for items:
-- Pens & Pencils
-- Notebooks
-- Paper Products
-- Office Supplies
-- Art Supplies
-- Files & Folders
-- Desk Accessories
-- Technology
+## 🎨 Theme Customization
 
----
+The system supports both light and dark modes. Theme preference is saved in localStorage.
 
-## Features Guide
-
-### Dashboard
-
-The main overview page showing:
-- **Total Items** - Number of products in inventory
-- **Low Stock** - Items below minimum stock level
-- **Today's Sales** - Total sales amount for today
-- **Transactions** - Number of sales today
-- **Recent Sales** - Last 5 transactions
-- **Low Stock Alert** - Items that need restocking
-- **Quick Actions** - Shortcuts to common tasks
-
-### Point of Sale (POS)
-
-1. **Select Category** - Filter items by category
-2. **Search Items** - Find by name, SKU, or barcode
-3. **Click Item** - Add to cart
-4. **Adjust Quantity** - Use +/- buttons or click quantity
-5. **Complete Sale** - Click checkout button
-
-Cart features:
-- Edit item quantities
-- Remove items
-- Clear entire cart
-- Auto-calculate totals
-
-### Items Management
-
-**Add Item Form Fields:**
-| Field | Required | Description |
-|-------|----------|-------------|
-| Name | Yes | Product name |
-| SKU | Yes | Unique stock keeping unit code |
-| Category | No | Product category |
-| Unit Price | Yes | Selling price (TSH) |
-| Cost Price | No | Purchase price (TSH) |
-| Quantity | No | Initial stock count |
-| Min Stock Level | No | Low stock alert threshold |
-| Barcode | No | Product barcode/SKU |
-| Description | No | Additional notes |
-
-**Bulk Import:**
-1. Click "Import CSV/XLS"
-2. Select your file (.csv or .xlsx)
-3. Preview data
-4. Click "Import"
-
-### Categories Management
-
-Simple category CRUD operations:
-- Add new categories
-- Edit existing categories
-- Delete categories (if no items linked)
-
-**Bulk Import Categories:**
-- Upload CSV/XLS with columns: `name`, `description`
-
-### Stock Management
-
-Three types of stock operations:
-
-1. **Stock In** - Add new inventory
-   - Select item
-   - Enter quantity
-   - Add reference (e.g., PO number)
-   - Optional notes
-
-2. **Stock Out** - Remove inventory
-   - Select item
-   - Enter quantity
-   - Add reference
-   - Optional notes
-
-3. **Adjust Stock** - Correct inventory counts
-   - Set new exact quantity
-   - Add notes explaining adjustment
-
-### Sales History
-
-View all past transactions:
-- Receipt number
-- Date and time
-- Cashier name
-- Items purchased
-- Total amounts
-- Click to view full receipt
-
-### Reports
-
-Generate reports for:
-- **Daily Sales** - Today's transactions
-- **Monthly Sales** - Monthly breakdown
-- **Stock Arrivals** - Inventory received
-
-Reports show:
-- Transaction counts
-- Total revenue
-- Average transaction value
-- Stock movement history
-
-### User Management
-
-**Admin Features:**
-- View all users
-- Add new users
-- Set user roles (Admin/Staff)
-- Assign email and password
-
-**Role Permissions:**
-| Feature | Admin | Staff |
-|---------|-------|-------|
-| Dashboard | ✓ | ✓ |
-| POS | ✓ | ✓ |
-| Items | ✓ | ✗ |
-| Categories | ✓ | ✗ |
-| Stock | ✓ | ✗ |
-| Sales History | ✓ | ✓ |
-| Reports | ✓ | ✓ |
-| User Management | ✓ | ✗ |
-
----
-
-## Import/Export
-
-### Import Items (CSV/XLS)
-
-Create a file with these columns:
-```csv
-name,sku,category,unit_price,cost_price,quantity,min_stock_level,barcode,description
-Blue Pen,PEN-001,Pens & Pencils,3500,1800,100,10,123456789,High quality pen
+CSS variables are used for easy customization:
+```css
+--primary: #E66239;
+--success: #00C951;
+--danger: #FB2C36;
+--warning: #F0B100;
 ```
 
-**Tips:**
-- Category names must match exactly (case-sensitive)
-- Prices in TSH
-- Keep SKU unique
+## 📄 License
 
-### Import Categories (CSV/XLS)
+This project is proprietary software. All rights reserved.
 
-Create a file with these columns:
-```csv
-name,description
-Pens & Pencils,All types of pens and pencils
-Notebooks,Exercise books and notebooks
-```
+## 👥 Credits
 
-### Export Data
+### Developed by
 
-Click "Export" button to download:
-- All items as Excel file
-- Includes all columns
+**DTC Team** (Digital Technology Consultants)
+- [OpenCode](https://opencode.ai) - AI-powered coding assistant
+- Human developers from DTC Team
+
+### Special Thanks
+- Supabase for the excellent backend service
+- Tabler Icons for the beautiful icon set
+- Vercel for hosting
 
 ---
 
-## Project Structure
-
-```
-PyPOS/
-├── database/
-│   ├── supabase_setup.sql     # Complete setup script
-│   ├── create_sale_items.sql   # Sale items table
-│   └── disable_rls.sql        # Security settings
-│
-└── frontend/
-    ├── public/
-    │   └── favicon.svg
-    │
-    ├── src/
-    │   ├── components/
-    │   │   ├── Layout.jsx     # Main layout with sidebar
-    │   │   └── Sidebar.jsx    # Navigation sidebar
-    │   │
-    │   ├── context/
-    │   │   └── AuthContext.jsx # Authentication state
-    │   │
-    │   ├── pages/
-    │   │   ├── Dashboard.jsx  # Main dashboard
-    │   │   ├── POS.jsx        # Point of Sale
-    │   │   ├── Items.jsx      # Items management
-    │   │   ├── Categories.jsx  # Categories management
-    │   │   ├── Stock.jsx      # Stock management
-    │   │   ├── Sales.jsx      # Sales history
-    │   │   ├── Reports.jsx    # Reports page
-    │   │   ├── Users.jsx      # User management
-    │   │   └── Login.jsx      # Login page
-    │   │
-    │   ├── services/
-    │   │   └── supabase.js    # Supabase API client
-    │   │
-    │   ├── App.jsx           # Main app component
-    │   ├── App.css           # Global styles
-    │   ├── index.css         # CSS reset
-    │   └── main.jsx          # Entry point
-    │
-    ├── index.html
-    ├── package.json
-    └── .env                 # Environment variables
-```
-
----
-
-## Troubleshooting
-
-### Common Issues
-
-**1. "Failed to load data" error**
-- Check Supabase URL and key in `.env`
-- Ensure tables exist in database
-- Check browser console for detailed errors
-
-**2. Can't add/edit items**
-- Make sure RLS is disabled
-- Run the RLS disable SQL again
-
-**3. Login not working**
-- Create user in Supabase Authentication
-- Check email/password are correct
-- Try clearing browser cache
-
-**4. Currency showing wrong symbol**
-- Search for "฿" or "TSH" in code
-- Replace with desired currency symbol
-
-**5. Import not working**
-- Check file format (CSV/XLS)
-- Ensure column names match exactly
-- No empty rows in data
-
-### Getting Help
-
-1. Check browser console (F12)
-2. Check Supabase dashboard for errors
-3. Review browser network tab
-4. Verify environment variables
-
----
-
-## License
-
-This project is open source and available under the MIT License.
-
----
-
-## Credits
-
-- **Design**: InApp Dashboard Template
-- **Icons**: Tabler Icons
-- **Database**: Supabase
-- **Font**: Poppins (Google Fonts)
-
----
-
-**Version**: 1.0.0  
-**Last Updated**: March 2026
+**Version:** 1.0.0  
+**Last Updated:** March 2026  
+**Copyright © 2026 Pawin PyPOS - DTC Team**

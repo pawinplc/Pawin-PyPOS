@@ -7,12 +7,14 @@ const Dashboard = () => {
   const [recentSales, setRecentSales] = useState([]);
   const [lowStock, setLowStock] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true);
     try {
       const [statsData, salesData, lowStockData] = await Promise.all([
         dashboardAPI.getStats(),
@@ -26,7 +28,12 @@ const Dashboard = () => {
       console.error('Failed to load dashboard data:', error);
     } finally {
       setLoading(false);
+      if (isRefresh) setRefreshing(false);
     }
+  };
+
+  const handleRefresh = () => {
+    loadData(true);
   };
 
   if (loading) {
@@ -36,9 +43,28 @@ const Dashboard = () => {
   return (
     <div className="row">
       <div className="col-12">
-        <div className="mb-4">
-          <h1 className="fs-3 mb-1">Dashboard</h1>
-          <p className="mb-0 text-muted">Welcome back! Here's what's happening today.</p>
+        <div className="d-flex justify-content-between align-items-start mb-4">
+          <div>
+            <h1 className="fs-3 mb-1">Dashboard</h1>
+            <p className="mb-0 text-muted">Welcome back! Here's what's happening today.</p>
+          </div>
+          <button 
+            className="btn btn-outline-secondary btn-sm" 
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            {refreshing ? (
+              <>
+                <span className="spinner-border spinner-border-sm me-1"></span>
+                Refreshing...
+              </>
+            ) : (
+              <>
+                <i className="ti ti-refresh me-1"></i>
+                Refresh
+              </>
+            )}
+          </button>
         </div>
       </div>
 

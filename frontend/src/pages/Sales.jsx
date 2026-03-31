@@ -7,6 +7,7 @@ const Sales = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSale, setSelectedSale] = useState(null);
+  const [viewingId, setViewingId] = useState(null);
 
   useEffect(() => {
     loadSales();
@@ -25,7 +26,11 @@ const Sales = () => {
   };
 
   const viewSale = (sale) => {
-    setSelectedSale(sale);
+    setViewingId(sale.id);
+    setTimeout(() => {
+      setSelectedSale(sale);
+      setViewingId(null);
+    }, 300);
   };
 
   const formatDate = (date) => {
@@ -205,8 +210,12 @@ const Sales = () => {
                     <td>{sale.sale_items?.length || 0}</td>
                     <td className="fw-bold">TSH{parseFloat(sale.final_amount).toLocaleString()}</td>
                     <td>
-                      <button onClick={() => viewSale(sale)} className="btn btn-sm btn-light">
-                        <i className="ti ti-eye"></i>
+                      <button onClick={() => viewSale(sale)} className="btn btn-sm btn-light" disabled={viewingId === sale.id}>
+                        {viewingId === sale.id ? (
+                          <span className="spinner-border spinner-border-sm"></span>
+                        ) : (
+                          <i className="ti ti-eye"></i>
+                        )}
                       </button>
                     </td>
                   </tr>
