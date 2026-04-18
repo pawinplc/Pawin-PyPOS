@@ -12,6 +12,7 @@ const Layout = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [notifDropdownOpen, setNotifDropdownOpen] = useState(false);
   const [notifLoading, setNotifLoading] = useState(false);
   const dropdownRef = useRef(null);
@@ -66,6 +67,7 @@ const Layout = () => {
       ]);
 
       const notifs = [];
+      const readIds = JSON.parse(localStorage.getItem('readNotifications') || '[]');
 
       const lowStockItems = (items || []).filter(item => item.quantity <= item.min_stock_level && item.quantity > 0);
       lowStockItems.slice(0, 3).forEach(item => {
@@ -105,12 +107,22 @@ const Layout = () => {
         });
       }
 
-      setNotifications(notifs.slice(0, 5));
+      const allNotifs = notifs.slice(0, 5);
+      setNotifications(allNotifs);
+      
+      const unread = allNotifs.filter(n => !readIds.includes(n.id)).length;
+      setUnreadCount(unread);
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
       setNotifLoading(false);
     }
+  };
+
+  const markAllRead = () => {
+    const readIds = notifications.map(n => n.id);
+    localStorage.setItem('readNotifications', JSON.stringify(readIds));
+    setUnreadCount(0);
   };
 
   const toggleSidebar = () => {
@@ -193,7 +205,9 @@ const Layout = () => {
         <div className="d-flex align-items-center gap-2">
           {isMobile ? (
             <button className="toggle-btn" onClick={toggleMobileMenu} title="Menu">
-              <i className="ti ti-menu-2"></i>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
+              </svg>
             </button>
           ) : (
             <button className="toggle-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}>
@@ -213,13 +227,17 @@ const Layout = () => {
           <li className="d-flex align-items-center gap-2" ref={notifRef}>
             <button 
               className="btn-icon btn-sm btn-light btn rounded-circle position-relative"
-              onClick={() => { setNotifDropdownOpen(!notifDropdownOpen); if (!notifDropdownOpen) loadNotifications(); }}
+              onClick={() => { 
+                if (!notifDropdownOpen) markAllRead();
+                setNotifDropdownOpen(!notifDropdownOpen); 
+                if (!notifDropdownOpen) loadNotifications(); 
+              }}
               style={{ width: '2rem', height: '2rem', padding: 0 }}
             >
               <i className="ti ti-bell" style={{ fontSize: '18px' }}></i>
-              {notifications.length > 0 && (
+              {unreadCount > 0 && (
                 <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '10px' }}>
-                  {notifications.length}
+                  {unreadCount}
                 </span>
               )}
             </button>
@@ -241,8 +259,10 @@ const Layout = () => {
               }}>
                 <div className="p-3 border-bottom d-flex justify-content-between align-items-center">
                   <h6 className="mb-0">Notifications</h6>
-                  {notifications.length > 0 && (
-                    <small className="text-muted">{notifications.length} new</small>
+                  {unreadCount > 0 && (
+                    <button className="btn btn-sm btn-link text-decoration-none p-0" onClick={markAllRead}>
+                      Mark all read
+                    </button>
                   )}
                 </div>
                 <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
