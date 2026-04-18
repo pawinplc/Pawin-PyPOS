@@ -184,15 +184,19 @@ img {
   margin: 0 auto;
 }
 
-.sidebar .logo-icon {
-  width: 24px;
-  height: 24px;
-  flex-shrink: 0;
+.sidebar .logo-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .sidebar .logo-text {
   white-space: nowrap;
   overflow: hidden;
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.95rem;
 }
 
 .sidebar .logo-text svg {
@@ -251,6 +255,27 @@ img {
 .sidebar .nav-link.active {
   color: var(--primary);
   background-color: rgba(230, 98, 57, 0.095);
+}
+
+.sidebar .nav-link {
+  position: relative;
+}
+
+.nav-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #dc3545;
+  border-radius: 50%;
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: pulse-dot 1.5s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .sidebar .nav-link .ti {
@@ -1458,6 +1483,19 @@ img {
   justify-content: center;
   min-height: 200px;
   color: var(--gray-400);
+}
+
+/* Skeleton Loading */
+.skeleton {
+  background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-100) 50%, var(--gray-200) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 4px;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 /* Add to Cart Loading */

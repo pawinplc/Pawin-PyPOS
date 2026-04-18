@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://dbocluzncuhhlrkeggez.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRib2NsdXpuY3VoaGxya2VnZ2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDQwNjQ2OTYsImV4cCI6MjA1OTY0MDY5Nn0.GYjZufXuQTKas0Lf715w_9MHrKrHS';
+const supabaseUrl = 'https://dbocluzncuhhlrkeggez.supabase.co';
+const supabaseKey = 'sb_publishable_8tb4LzD6ZvfIUa04TSQSDA_FsSe7vF5';
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -18,9 +18,9 @@ export const authAPI = {
     };
   },
 
-  async getMe() {
+  async getCurrentUser() {
     const { data: { user }, error } = await supabase.auth.getUser();
-    if (error) throw error;
+    if (error) return null;
     return user;
   },
 
@@ -30,130 +30,123 @@ export const authAPI = {
 };
 
 export const categoriesAPI = {
-  getAll: async () => {
+  async getAll() {
     const { data: categories, error } = await supabase.from('categories').select('*').order('name');
     if (error) throw error;
-    
-    const { data: items } = await supabase.from('items').select('category_id');
-    const itemsCount = {};
-    (items || []).forEach(item => {
-      if (item.category_id) {
-        itemsCount[item.category_id] = (itemsCount[item.category_id] || 0) + 1;
-      }
-    });
-    
-    return (categories || []).map(cat => ({
-      ...cat,
-      items_count: itemsCount[cat.id] || 0
-    }));
+    return categories;
   },
-  create: async (category) => {
+
+  async create(category) {
     const { data, error } = await supabase.from('categories').insert(category).select().single();
     if (error) throw error;
     return data;
   },
-  update: async (id, category) => {
+
+  async update(id, category) {
     const { data, error } = await supabase.from('categories').update(category).eq('id', id).select().single();
     if (error) throw error;
     return data;
   },
-  delete: async (id) => {
+
+  async delete(id) {
     const { error } = await supabase.from('categories').delete().eq('id', id);
     if (error) throw error;
   }
 };
 
 export const itemsAPI = {
-  getAll: async (params = {}) => {
+  async getAll() {
     let query = supabase.from('items').select('*, categories(name)');
-    
-    if (params.search) {
-      query = query.or(`name.ilike.%${params.search}%,sku.ilike.%${params.search}%`);
-    }
-    if (params.category_id) {
-      query = query.eq('category_id', params.category_id);
-    }
-    
-    const { data, error } = await query.order('name');
+    const { data: items, error } = await query;
     if (error) throw error;
-    return (data || []).map(item => ({
-      ...item,
-      category_name: item.categories?.name,
-      is_low_stock: item.quantity <= item.min_stock_level
-    }));
+    return items;
   },
-  create: async (item) => {
+
+  async getByCategory(categoryId) {
+    const { data: items, error } = await supabase.from('items').select('*, categories(name)').eq('category_id', categoryId);
+    if (error) throw error;
+    return items;
+  },
+
+  async create(item) {
     const { data, error } = await supabase.from('items').insert(item).select().single();
     if (error) throw error;
     return data;
   },
-  update: async (id, item) => {
+
+  async update(id, item) {
     const { data, error } = await supabase.from('items').update(item).eq('id', id).select().single();
     if (error) throw error;
     return data;
   },
-  delete: async (id) => {
+
+  async delete(id) {
     const { error } = await supabase.from('items').delete().eq('id', id);
     if (error) throw error;
+  },
+
+  async uploadImage(filePath, file) {
+    const { data, error } = await supabase.storage
+      .from('items')
+      .upload(filePath, file);
+    if (error) throw error;
+    return data;
+  },
+
+  async getImageUrl(filePath) {
+    const { data: urlData } = supabase.storage
+      .from('items')
+      .getPublicUrl(filePath);
+    return urlData.publicURL;
   }
 };
 
 export const stockAPI = {
-  getMovements: async (params = {}) => {
+  async getMovements(filters = {}) {
     let query = supabase.from('stock_movements').select('*, items(name), users(full_name)');
-    if (params.item_id) query = query.eq('item_id', params.item_id);
-    if (params.movement_type) query = query.eq('movement_type', params.movement_type);
-    const { data, error } = await query.order('created_at', { ascending: false }).limit(100);
+    if (filters.type) {
+      query = query.eq('movement_type', filters.type);
+    }
+    const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
-    return (data || []).map(m => ({
-      ...m,
-      item_name: m.items?.name,
-      username: m.users?.full_name
-    }));
+    return data;
   },
-  stockIn: async (data) => {
+
+  async addStock(data) {
     const { data: item } = await supabase.from('items').select('quantity').eq('id', data.item_id).single();
     await supabase.from('items').update({ quantity: (item?.quantity || 0) + data.quantity }).eq('id', data.item_id);
     const { data: movement, error } = await supabase.from('stock_movements').insert({
-      item_id: data.item_id,
-      movement_type: 'in',
-      quantity: data.quantity,
-      reference: data.reference,
-      notes: data.notes
-    }).select().single();
+      ...data,
+      movement_type: 'in'
+    });
     if (error) throw error;
     return movement;
   },
-  stockOut: async (data) => {
+
+  async removeStock(data) {
     const { data: item } = await supabase.from('items').select('quantity').eq('id', data.item_id).single();
-    if ((item?.quantity || 0) < data.quantity) throw new Error('Insufficient stock');
+    if (item && item.quantity < data.quantity) {
+      throw new Error('Insufficient stock');
+    }
     await supabase.from('items').update({ quantity: item.quantity - data.quantity }).eq('id', data.item_id);
     const { data: movement, error } = await supabase.from('stock_movements').insert({
-      item_id: data.item_id,
-      movement_type: 'out',
-      quantity: data.quantity,
-      reference: data.reference,
-      notes: data.notes
-    }).select().single();
+      ...data,
+      movement_type: 'out'
+    });
     if (error) throw error;
     return movement;
   },
-  adjust: async (data) => {
+
+  async adjustStock(data) {
     await supabase.from('items').update({ quantity: data.quantity }).eq('id', data.item_id);
-    const { data: movement, error } = await supabase.from('stock_movements').insert({
-      item_id: data.item_id,
-      movement_type: 'adjustment',
-      quantity: data.quantity,
-      reference: data.reference,
-      notes: data.notes
-    }).select().single();
+    const { data: movement, error } = await supabase.from('stock_movements').insert(data);
     if (error) throw error;
     return movement;
   }
 };
 
 export const salesAPI = {
-  getAll: async () => {
+  async getAll() {
     let { data, error } = await supabase
       .from('sales')
       .select('*, users(full_name)')
@@ -180,8 +173,10 @@ export const salesAPI = {
       categories_involved: [...new Set((sale.sale_items || []).map(i => i.category_name).filter(Boolean))]
     }));
   },
-  create: async (saleData, cashierId) => {
+
+  async create(saleData, cashierId) {
     const total = saleData.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
+    const now = new Date().toISOString();
     const { data: sale, error: saleError } = await supabase
       .from('sales')
       .insert({
@@ -189,7 +184,8 @@ export const salesAPI = {
         final_amount: total - (saleData.discount_amount || 0),
         discount_amount: saleData.discount_amount || 0,
         payment_method: saleData.payment_method || 'cash',
-        customer_name: saleData.customer_name
+        customer_name: saleData.customer_name,
+        created_at: now
       })
       .select()
       .single();
@@ -215,54 +211,181 @@ export const salesAPI = {
 };
 
 export const dashboardAPI = {
-  getStats: async () => {
-    const today = new Date().toISOString().split('T')[0];
-    const { count: totalItems } = await supabase.from('items').select('id', { count: 'exact', head: true });
-    const { data: items } = await supabase.from('items').select('quantity, min_stock_level');
-    const lowStock = items?.filter(i => i.quantity <= i.min_stock_level).length || 0;
-    const { data: todaySales } = await supabase.from('sales').select('final_amount').gte('created_at', today);
-    const { count: todayCount } = await supabase.from('sales').select('id', { count: 'exact', head: true }).gte('created_at', today);
+  async getStats() {
+    console.log('Fetching dashboard stats...');
+    
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+    
+    const { data: items, error: itemsError } = await supabase.from('items').select('id, quantity, min_stock_level, is_service');
+    console.log('Items fetched:', items?.length, itemsError);
+    
+    if (itemsError) {
+      console.error('items error:', itemsError);
+    }
+    
+    const totalItems = items?.length || 0;
+    const lowStock = items?.filter(i => i.is_service !== true && i.quantity <= (i.min_stock_level || 0)).length || 0;
+    const outOfStock = items?.filter(i => i.is_service !== true && i.quantity <= 0).length || 0;
+    
+    const { data: allSales, error: salesError } = await supabase.from('sales').select('id, final_amount, created_at');
+    console.log('Sales fetched:', allSales?.length, salesError);
+    
+    const todayKey = today + 'T';
+    const todaySales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(todayKey));
+    const todayCount = todaySales.length;
+    
+    const { data: users, error: usersError } = await supabase.from('users').select('id');
+    const activeUsers = users?.length || 0;
+    console.log('Users fetched:', activeUsers, usersError);
     
     return {
-      total_items: totalItems || 0,
+      total_items: totalItems,
       low_stock_items: lowStock,
-      today_sales: todaySales?.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0) || 0,
-      today_transactions: todayCount || 0
+      out_of_stock: outOfStock,
+      active_users: activeUsers,
+      today_sales: todaySales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0),
+      today_transactions: todayCount
     };
   },
-  getRecentSales: async (limit = 5) => {
+
+  async getRecentSales(limit = 5) {
     const { data, error } = await supabase
       .from('sales')
       .select('id, final_amount, created_at, users(full_name)')
       .order('created_at', { ascending: false })
       .limit(limit);
     if (error) throw error;
-    
-    for (const sale of (data || [])) {
-      const { count } = await supabase
-        .from('sale_items')
-        .select('id', { count: 'exact', head: true })
-        .eq('sale_id', sale.id);
-      sale.items_count = count || 0;
-    }
-    
-    return (data || []).map(s => ({
-      id: s.id,
-      final_amount: parseFloat(s.final_amount || 0),
-      cashier_name: s.users?.full_name,
-      items_count: s.items_count || 0,
-      created_at: s.created_at
-    }));
+    return data?.map(sale => ({
+      ...sale,
+      cashier_name: sale.users?.full_name
+    })) || [];
   },
-  getLowStock: async (limit = 5) => {
-    const { data, error } = await supabase
+
+  async getLowStock(limit = 5) {
+    const { data: items, error } = await supabase
       .from('items')
-      .select('id, name, sku, quantity, min_stock_level, categories(name)')
+      .select('*, categories(name)')
+      .eq('is_service', false)
       .order('quantity', { ascending: true })
       .limit(limit);
-    if (error) throw error;
-    return (data || []).filter(i => i.quantity <= i.min_stock_level);
+    if (error) {
+      console.error('getLowStock error:', error);
+      return [];
+    }
+    return (items || []).filter(i => i.quantity <= (i.min_stock_level || 0));
   }
 };
 
-export default supabase;
+export const usersAPI = {
+  async getAll() {
+    const { data, error } = await supabase
+      .from('users')
+      .select('*, roles(name)')
+      .order('full_name');
+    if (error) throw error;
+return data;
+  },
+
+  async getAdminStats() {
+    console.log('Fetching admin dashboard stats...');
+    
+    const { data: items, error: itemsError } = await supabase.from('items').select('id, quantity, min_stock_level, is_service');
+    console.log('Items:', items?.length, itemsError);
+    
+    const totalItems = items?.length || 0;
+    const lowStock = items?.filter(i => i.is_service !== true && i.quantity <= (i.min_stock_level || 0)).length || 0;
+    const outOfStock = items?.filter(i => i.is_service !== true && i.quantity <= 0).length || 0;
+    
+    const { data: allSales, error: salesError } = await supabase.from('sales').select('id, final_amount, created_at');
+    console.log('Sales:', allSales?.length, salesError);
+    
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const todayKey = today + 'T';
+    const todaySales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(todayKey));
+    const todayTotal = todaySales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
+    
+    // Calculate week start (Monday)
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + 1);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekSales = (allSales || []).filter(s => {
+      if (!s.created_at) return false;
+      const saleDate = new Date(s.created_at);
+      return saleDate >= weekStart;
+    });
+    const weekTotal = weekSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
+    
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthSales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(thisMonth));
+    const monthTotal = monthSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
+    
+    const thisYear = String(now.getFullYear());
+    const yearSales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(thisYear));
+    const yearTotal = yearSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
+    
+    const { data: users } = await supabase.from('users').select('id');
+    const totalUsers = users?.length || 0;
+    
+    return {
+      total_items: totalItems,
+      low_stock_items: lowStock,
+      out_of_stock: outOfStock,
+      today_sales: todayTotal,
+      today_transactions: todaySales.length,
+      week_sales: weekTotal,
+      week_transactions: weekSales.length,
+      month_sales: monthTotal,
+      month_transactions: monthSales.length,
+      total_sales: yearTotal,
+      total_transactions: yearSales.length,
+      total_users: totalUsers,
+      active_users: totalUsers
+    };
+}
+};
+
+export const analyticsAPI = {
+  async getSalesByCategory() {
+    const { data: saleItems } = await supabase
+      .from('sale_items')
+      .select('quantity, subtotal, items(categories(name))');
+    
+    const categoryData = {};
+    (saleItems || []).forEach(si => {
+      const category = si.items?.categories?.name || 'Uncategorized';
+      if (!categoryData[category]) {
+        categoryData[category] = { count: 0, total: 0 };
+      }
+      categoryData[category].count += si.quantity || 0;
+      categoryData[category].total += si.subtotal || 0;
+    });
+    
+    return Object.entries(categoryData).map(([name, data]) => ({
+      name,
+      ...data
+    })).sort((a, b) => b.total - a.total);
+  }
+};
+
+// Real-time subscription helper
+export const subscribeToTable = (table, callback) => {
+  const subscription = supabase
+    .channel('public:' + table)
+    .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+      callback(payload);
+    })
+    .subscribe();
+
+  return () => supabase.removeChannel(subscription);
+};
+
+export const subscribeToSales = (callback) => {
+  return subscribeToTable('sales', callback);
+};
+
+export { supabase as default };

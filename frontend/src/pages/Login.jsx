@@ -34,15 +34,15 @@ const Login = () => {
       <div className="card login-card" style={{ maxWidth: 420, width: '100%' }}>
         <div className="card-body p-5">
           <div className="text-center mb-4">
-            <div className="mb-4 d-inline-block">
-              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="24" height="24" rx="4" fill="#E66239"/>
-                <text x="12" y="17" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">PP</text>
-              </svg>
-              <span className="ms-2" style={{ fontWeight: 600, fontSize: '1.25rem', color: 'var(--text-primary)' }}>Pawin PyPOS</span>
+            <div className="mb-3 d-inline-block">
+              <img 
+                src="/logo1.png" 
+                alt="Pawin PyPOS" 
+                style={{ width: 60, height: 60, objectFit: 'contain' }}
+              />
             </div>
-            <h1 className="card-title mb-1" style={{ color: 'var(--text-primary)' }}>Sign in to your account</h1>
-            <p className="text-muted small">University Stationery Inventory System</p>
+            <h1 className="card-title mb-1" style={{ color: 'var(--text-primary)' }}>Pawin PyPOS</h1>
+            <p className="text-muted small">Sign in to your account</p>
           </div>
 
           <form onSubmit={handleSubmit}>
@@ -95,12 +95,6 @@ const Login = () => {
               )}
             </button>
           </form>
-
-          <div className="text-center mt-4 small">
-            <p className="mb-2 text-muted">Demo: admin@pypos.com / password</p>
-            <span className="text-muted">Don't have an account? </span>
-            <a href="#" className="link-primary text-decoration-none">Sign up</a>
-          </div>
         </div>
       </div>
     </div>

@@ -3,7 +3,7 @@ import { stockAPI, itemsAPI } from '../services/supabase';
 import { Plus, ArrowDownToLine, ArrowUpFromLine, RefreshCw, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const Stock = () => {
+const Stock = ({ isAdmin = false }) => {
   const [items, setItems] = useState([]);
   const [movements, setMovements] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -14,24 +14,36 @@ const Stock = () => {
   });
   const [search, setSearch] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadData();
   }, []);
 
-  const loadData = async () => {
+  const loadData = async (isRefresh = false) => {
     try {
+      if (!isRefresh) setLoading(true);
       const [itemsData, movementsData] = await Promise.all([
         itemsAPI.getAll(),
         stockAPI.getMovements({}),
       ]);
-      setItems(itemsData || []);
+      const filteredItems = (itemsData || []).filter(item => item.is_service !== true);
+      setItems(filteredItems);
       setMovements((movementsData || []).slice(0, 50));
     } catch (error) {
       toast.error('Failed to load data');
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData(true);
   };
 
   const openModal = (type) => {
@@ -99,7 +111,85 @@ const Stock = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <div className="skeleton" style={{ width: 180, height: 24, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: 220, height: 16 }}></div>
+            </div>
+            <div className="d-flex gap-2">
+              <div className="skeleton" style={{ width: 90, height: 36, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 90, height: 36, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 80, height: 36, borderRadius: 4 }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="card mb-4">
+            <div className="card-header bg-white px-4 py-3">
+              <div className="skeleton" style={{ width: 120, height: 20 }}></div>
+            </div>
+            <div className="table-responsive">
+              <table className="table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 100, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 50, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 40, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 70, height: 14 }}></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(6)].map((_, i) => (
+                    <tr key={i}>
+                      <td><div className="skeleton" style={{ width: 50, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 100, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 40, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 30, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 60, height: 16 }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="card">
+            <div className="card-header bg-white px-4 py-3">
+              <div className="skeleton" style={{ width: 160, height: 20 }}></div>
+            </div>
+            <div className="table-responsive">
+              <table className="table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th><div className="skeleton" style={{ width: 120, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 50, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 40, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(5)].map((_, i) => (
+                    <tr key={i}>
+                      <td><div className="skeleton" style={{ width: 100, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 70, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 40, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 30, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 50, height: 16 }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -111,18 +201,26 @@ const Stock = () => {
             <p className="text-muted mb-0">Manage inventory stock levels</p>
           </div>
           <div className="d-flex gap-2">
-            <button className="btn btn-success" onClick={() => openModal('in')}>
-              <i className="ti ti-arrow-down"></i>
-              Stock In
+            <button className="btn btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+              <i className={`ti ti-refresh ${refreshing ? 'fa-spin' : ''}`}></i>
+              {refreshing ? ' Refreshing...' : ' Refresh'}
             </button>
-            <button className="btn btn-danger" onClick={() => openModal('out')}>
-              <i className="ti ti-arrow-up"></i>
-              Stock Out
-            </button>
-            <button className="btn btn-warning" style={{ color: 'white' }} onClick={() => openModal('adjustment')}>
-              <i className="ti ti-refresh"></i>
-              Adjust
-            </button>
+            {!isAdmin && (
+              <>
+                <button className="btn btn-success" onClick={() => openModal('in')}>
+                  <i className="ti ti-arrow-down"></i>
+                  Stock In
+                </button>
+                <button className="btn btn-danger" onClick={() => openModal('out')}>
+                  <i className="ti ti-arrow-up"></i>
+                  Stock Out
+                </button>
+                <button className="btn btn-warning" style={{ color: 'white' }} onClick={() => openModal('adjustment')}>
+                  <i className="ti ti-refresh"></i>
+                  Adjust
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -17,7 +17,8 @@ export const AuthProvider = ({ children }) => {
             email: session.user.email,
             username: session.user.email?.split('@')[0],
             role: 'admin',
-            full_name: session.user.user_metadata?.full_name || session.user.email
+            full_name: session.user.user_metadata?.full_name || session.user.email,
+            avatar_url: session.user.user_metadata?.avatar_url || null
           });
         }
       } catch (error) {
@@ -37,7 +38,8 @@ export const AuthProvider = ({ children }) => {
             email: session.user.email,
             username: session.user.email?.split('@')[0],
             role: 'admin',
-            full_name: session.user.user_metadata?.full_name || session.user.email
+            full_name: session.user.user_metadata?.full_name || session.user.email,
+            avatar_url: session.user.user_metadata?.avatar_url || null
           });
         } else {
           setUser(null);
@@ -65,7 +67,8 @@ export const AuthProvider = ({ children }) => {
         email: data.user.email,
         username: data.user.email?.split('@')[0],
         role: 'admin',
-        full_name: data.user.user_metadata?.full_name || data.user.email
+        full_name: data.user.user_metadata?.full_name || data.user.email,
+        avatar_url: data.user.user_metadata?.avatar_url || null
       };
       setUser(userData);
       return userData;
@@ -87,7 +90,7 @@ export const AuthProvider = ({ children }) => {
   const isAdmin = () => user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, setUser }}>
       {children}
     </AuthContext.Provider>
   );

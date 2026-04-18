@@ -1,13 +1,51 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
+import supabase from '../services/supabase';
 import toast from 'react-hot-toast';
 
 const Account = () => {
-  const { user, updatePassword } = useAuth();
+  const { user, updatePassword, setUser } = useAuth();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
+
+  const getInitials = (name) => {
+    if (!name) return 'U';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
+
+  const handleAvatarUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploading(true);
+    try {
+      const fileName = `avatar-${user.id}-${Date.now()}.jpg`;
+      const { data, error } = await supabase.storage
+        .from('item-images')
+        .upload(fileName, file);
+      
+      if (error) throw error;
+      
+      const { data: urlData } = supabase.storage
+        .from('item-images')
+        .getPublicUrl(fileName);
+      
+      const avatarUrl = urlData.publicUrl;
+      
+      // Update user context with new avatar
+      setUser({ ...user, avatar_url: avatarUrl });
+      
+      toast.success('Profile picture updated!');
+    } catch (error) {
+      toast.error('Failed to upload image');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handlePasswordChange = async (e) => {
     e.preventDefault();
@@ -51,6 +89,49 @@ const Account = () => {
             <h4 className="mb-0 h6">Profile Information</h4>
           </div>
           <div className="card-body">
+            <div className="text-center mb-4">
+              <div className="position-relative d-inline-block">
+                {user?.avatar_url ? (
+                  <img 
+                    src={user.avatar_url} 
+                    alt="Profile"
+                    className="rounded-circle"
+                    style={{ width: 100, height: 100, objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div 
+                    className="rounded-circle d-flex align-items-center justify-content-center text-white"
+                    style={{ width: 100, height: 100, background: 'var(--primary)', fontSize: '2rem' }}
+                  >
+                    {getInitials(user?.full_name || user?.username)}
+                  </div>
+                )}
+                <button 
+                  className="btn btn-sm btn-primary rounded-circle position-absolute"
+                  style={{ bottom: 0, right: 0, width: 32, height: 32 }}
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                >
+                  {uploading ? (
+                    <span className="spinner-border spinner-border-sm"></span>
+                  ) : (
+                    <i className="ti ti-camera"></i>
+                  )}
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*"
+                  className="d-none"
+                  onChange={handleAvatarUpload}
+                />
+              </div>
+              <p className="mt-2 text-muted small">Click to change photo</p>
+            </div>
+            <div className="mb-3">
+              <label className="form-label text-muted small">Full Name</label>
+              <p className="mb-0 fw-medium">{user?.full_name || user?.username || 'N/A'}</p>
+            </div>
             <div className="mb-3">
               <label className="form-label text-muted small">Email Address</label>
               <p className="mb-0 fw-medium">{user?.email || 'N/A'}</p>
@@ -120,7 +201,7 @@ const Account = () => {
             <h4 className="mb-0 h6">About PyPOS</h4>
           </div>
           <div className="card-body">
-            <p className="mb-1"><strong>Pawin PyPOS</strong> - University Stationery Inventory & POS System</p>
+            <p className="mb-1"><strong>Pawin PyPOS</strong> - Stationery Inventory & POS System</p>
             <p className="mb-1 text-muted small">Version 1.0.0</p>
             <p className="mb-0 text-muted small">Built with React + Supabase</p>
           </div>

@@ -16,19 +16,20 @@ const Dashboard = () => {
   const loadData = async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
     try {
-      const [statsData, salesData, lowStockData] = await Promise.all([
-        dashboardAPI.getStats(),
-        dashboardAPI.getRecentSales(5),
-        dashboardAPI.getLowStock(5),
-      ]);
-      setStats(statsData || { total_items: 0, low_stock_items: 0, today_sales: 0, today_transactions: 0 });
+      console.log('Loading dashboard data...');
+      const statsData = await dashboardAPI.getStats();
+      console.log('Stats:', statsData);
+      const salesData = await dashboardAPI.getRecentSales(5);
+      console.log('Recent sales:', salesData);
+      setStats(statsData);
       setRecentSales(salesData || []);
-      setLowStock(lowStockData || []);
+      setLowStock([]);
     } catch (error) {
       console.error('Failed to load dashboard data:', error);
+      setStats({ total_items: 0, low_stock_items: 0, out_of_stock: 0, active_users: 0, today_sales: 0, today_transactions: 0, week_sales: 0, month_sales: 0 });
     } finally {
       setLoading(false);
-      if (isRefresh) setRefreshing(false);
+if (isRefresh) setRefreshing(false);
     }
   };
 
@@ -37,7 +38,68 @@ const Dashboard = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-start mb-4">
+            <div>
+              <div className="skeleton" style={{ width: 150, height: 28, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: 220, height: 18 }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-sm-6 col-lg-3">
+          <div className="card p-3">
+            <div className="skeleton" style={{ width: 80, height: 16, marginBottom: 8 }}></div>
+            <div className="skeleton" style={{ width: 60, height: 32 }}></div>
+          </div>
+        </div>
+        <div className="col-sm-6 col-lg-3">
+          <div className="card p-3">
+            <div className="skeleton" style={{ width: 80, height: 16, marginBottom: 8 }}></div>
+            <div className="skeleton" style={{ width: 60, height: 32 }}></div>
+          </div>
+        </div>
+        <div className="col-sm-6 col-lg-3">
+          <div className="card p-3">
+            <div className="skeleton" style={{ width: 80, height: 16, marginBottom: 8 }}></div>
+            <div className="skeleton" style={{ width: 60, height: 32 }}></div>
+          </div>
+        </div>
+        <div className="col-sm-6 col-lg-3">
+          <div className="card p-3">
+            <div className="skeleton" style={{ width: 80, height: 16, marginBottom: 8 }}></div>
+            <div className="skeleton" style={{ width: 60, height: 32 }}></div>
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="card">
+            <div className="card-header"><div className="skeleton" style={{ width: 120, height: 20 }}></div></div>
+            <div className="card-body">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="d-flex justify-content-between py-2 border-bottom">
+                  <div className="skeleton" style={{ width: 100, height: 16 }}></div>
+                  <div className="skeleton" style={{ width: 60, height: 16 }}></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="card">
+            <div className="card-header"><div className="skeleton" style={{ width: 120, height: 20 }}></div></div>
+            <div className="card-body">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="d-flex justify-content-between py-2 border-bottom">
+                  <div className="skeleton" style={{ width: 100, height: 16 }}></div>
+                  <div className="skeleton" style={{ width: 60, height: 16 }}></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

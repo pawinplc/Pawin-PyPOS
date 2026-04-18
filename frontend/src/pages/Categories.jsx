@@ -3,7 +3,7 @@ import { categoriesAPI } from '../services/supabase';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 
-const Categories = () => {
+const Categories = ({ isAdmin = false }) => {
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -15,21 +15,37 @@ const Categories = () => {
   const [formData, setFormData] = useState({ name: '', description: '' });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [search, setSearch] = useState('');
 
   useEffect(() => {
     loadCategories();
   }, []);
 
-  const loadCategories = async () => {
+  const loadCategories = async (isRefresh = false) => {
     try {
       const data = await categoriesAPI.getAll();
       setCategories(data || []);
     } catch (error) {
       toast.error('Failed to load categories');
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadCategories(true);
+  };
+
+  const filteredCategories = categories.filter(cat =>
+    cat.name.toLowerCase().includes(search.toLowerCase()) ||
+    (cat.description && cat.description.toLowerCase().includes(search.toLowerCase()))
+  );
 
   const openModal = (category = null) => {
     if (category) {
@@ -153,8 +169,67 @@ const Categories = () => {
     XLSX.writeFile(wb, 'categories_template.xlsx');
   };
 
+  const handleExport = () => {
+    const exportData = filteredCategories.map(cat => ({
+      name: cat.name,
+      description: cat.description || ''
+    }));
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Categories');
+    XLSX.writeFile(wb, 'categories_export.xlsx');
+  };
+
   if (loading) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+              <div className="skeleton" style={{ width: 150, height: 24, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: 200, height: 16 }}></div>
+            </div>
+            <div className="d-flex gap-2">
+              <div className="skeleton" style={{ width: 100, height: 36, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 100, height: 36, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 100, height: 36, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 120, height: 36, borderRadius: 4 }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-12">
+          <div className="card">
+            <div className="card-body p-3">
+              <div className="skeleton" style={{ width: 200, height: 20, marginBottom: 16 }}></div>
+            </div>
+            <div className="table-responsive">
+              <table className="table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th><div className="skeleton" style={{ width: 40, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 120, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 150, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(6)].map((_, i) => (
+                    <tr key={i}>
+                      <td><div className="skeleton" style={{ width: 30, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 120, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 150, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 50, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 70, height: 16 }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -166,6 +241,10 @@ const Categories = () => {
             <p className="text-muted mb-0">Manage your product categories</p>
           </div>
           <div className="d-flex gap-2">
+            <button className="btn btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+              <i className={`ti ti-refresh ${refreshing ? 'fa-spin' : ''}`}></i>
+              {refreshing ? ' Refreshing...' : ' Refresh'}
+            </button>
             <button className="btn btn-outline-secondary" onClick={() => fileInputRef.current?.click()}>
               <i className="ti ti-upload me-1"></i>
               Import CSV/XLS
@@ -181,16 +260,35 @@ const Categories = () => {
               <i className="ti ti-file-arrow-up me-1"></i>
               Template
             </button>
-            <button className="btn btn-primary" onClick={() => openModal()}>
-              <i className="ti ti-plus"></i>
-              Add Category
+<button className="btn btn-outline-secondary" onClick={handleExport}>
+              <i className="ti ti-download me-1"></i>
+              Export
             </button>
+            {!isAdmin && (
+              <button className="btn btn-primary" onClick={() => openModal()}>
+                <i className="ti ti-plus"></i>
+                Add Category
+              </button>
+            )}
           </div>
         </div>
       </div>
 
       <div className="col-12">
         <div className="card">
+          <div className="card-body p-3">
+            <div className="search-box">
+              <span className="search-box-icon"><i className="ti ti-search"></i></span>
+              <input
+                type="text"
+                className="form-control"
+                placeholder="Search categories..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{ maxWidth: 300 }}
+              />
+            </div>
+          </div>
           <div className="table-responsive">
             <table className="table mb-0 text-nowrap table-hover">
               <thead className="table-light border-light">
@@ -203,7 +301,7 @@ const Categories = () => {
                 </tr>
               </thead>
               <tbody>
-                {categories.map(category => (
+                {filteredCategories.map(category => (
                   <tr key={category.id} className="align-middle">
                     <td>{category.id}</td>
                     <td className="fw-medium">{category.name}</td>
@@ -214,16 +312,20 @@ const Categories = () => {
                       </span>
                     </td>
                     <td>
-                      <button onClick={() => openModal(category)} className="table-action-btn" disabled={saving || deletingId}>
-                        <i className="ti ti-edit"></i>
-                      </button>
-                      <button onClick={() => handleDelete(category.id)} className="table-action-btn danger" disabled={deletingId === category.id}>
-                        {deletingId === category.id ? (
-                          <span className="spinner-border spinner-border-sm"></span>
-                        ) : (
-                          <i className="ti ti-trash"></i>
-                        )}
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button onClick={() => openModal(category)} className="table-action-btn" disabled={saving || deletingId}>
+                            <i className="ti ti-edit"></i>
+                          </button>
+                          <button onClick={() => handleDelete(category.id)} className="table-action-btn danger" disabled={deletingId === category.id}>
+                            {deletingId === category.id ? (
+                              <span className="spinner-border spinner-border-sm"></span>
+                            ) : (
+                              <i className="ti ti-trash"></i>
+                            )}
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}

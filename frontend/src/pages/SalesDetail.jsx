@@ -79,7 +79,40 @@ const SalesDetail = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <div className="skeleton" style={{ width: 80, height: 24 }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-12">
+          <div className="card">
+            <div className="card-body">
+              <div className="text-center mb-4">
+                <div className="skeleton" style={{ width: 150, height: 24, margin: '0 auto 8px' }}></div>
+                <div className="skeleton" style={{ width: 200, height: 16, margin: '0 auto 4px' }}></div>
+                <div className="skeleton" style={{ width: 150, height: 14, margin: '0 auto' }}></div>
+              </div>
+              <div className="border-bottom pb-3 mb-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="d-flex justify-content-between py-2">
+                    <div className="skeleton" style={{ width: 120, height: 16 }}></div>
+                    <div className="skeleton" style={{ width: 60, height: 16 }}></div>
+                  </div>
+                ))}
+              </div>
+              <div className="d-flex justify-content-between pt-2">
+                <div className="skeleton" style={{ width: 80, height: 24 }}></div>
+                <div className="skeleton" style={{ width: 80, height: 24 }}></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -183,7 +216,7 @@ const SalesDetail = () => {
             <div className="modal-body">
               <div className="text-center border-bottom pb-3 mb-3">
                 <h4 className="mb-1">Pawin PyPOS</h4>
-                <p className="text-muted mb-1 small">University Stationery Store</p>
+                <p className="text-muted mb-1 small">Pawin PyPOS Stationery</p>
                 <p className="text-muted mb-0 small">{formatDate(selectedSale.created_at)}</p>
               </div>
 

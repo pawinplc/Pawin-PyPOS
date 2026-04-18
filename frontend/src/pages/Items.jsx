@@ -3,11 +3,12 @@ import { itemsAPI, categoriesAPI } from '../services/supabase';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 
-const Items = () => {
+const Items = ({ isAdmin = false }) => {
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -18,19 +19,21 @@ const Items = () => {
 
   const [formData, setFormData] = useState({
     name: '', sku: '', category_id: '',
-    unit_price: '', cost_price: '', quantity: '', min_stock_level: ''
+    unit_price: '', cost_price: '', quantity: '', min_stock_level: '', is_service: false, image_url: ''
   });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
 
   useEffect(() => {
     loadData();
-  }, [search]);
+  }, [search, categoryFilter]);
 
-  const loadData = async () => {
+  const loadData = async (isRefresh = false) => {
     try {
       const [itemsData, catsData] = await Promise.all([
-        itemsAPI.getAll({ search }),
+        itemsAPI.getAll({ search, category_id: categoryFilter || undefined }),
         categoriesAPI.getAll(),
       ]);
       setItems(itemsData || []);
@@ -38,8 +41,17 @@ const Items = () => {
     } catch (error) {
       toast.error('Failed to load data');
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadData(true);
   };
 
   const openModal = (item = null) => {
@@ -52,13 +64,15 @@ const Items = () => {
         unit_price: item.unit_price,
         cost_price: item.cost_price,
         quantity: item.quantity,
-        min_stock_level: item.min_stock_level
+        min_stock_level: item.min_stock_level,
+        is_service: item.is_service || false,
+        image_url: item.image_url || ''
       });
     } else {
       setEditingItem(null);
       setFormData({
         name: '', sku: '', category_id: '',
-        unit_price: '', cost_price: '', quantity: '', min_stock_level: ''
+        unit_price: '', cost_price: '', quantity: '', min_stock_level: '', is_service: false, image_url: ''
       });
     }
     setShowModal(true);
@@ -67,6 +81,26 @@ const Items = () => {
   const closeModal = () => {
     setShowModal(false);
     setEditingItem(null);
+    setFormData({
+      name: '', sku: '', category_id: '',
+      unit_price: '', cost_price: '', quantity: '', min_stock_level: '', is_service: false, image_url: ''
+    });
+  };
+
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setImageUploading(true);
+    try {
+      const imageUrl = await itemsAPI.uploadImage(file);
+      setFormData({ ...formData, image_url: imageUrl });
+      toast.success('Image uploaded');
+    } catch (error) {
+      toast.error('Failed to upload image');
+    } finally {
+      setImageUploading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -77,9 +111,10 @@ const Items = () => {
         ...formData,
         unit_price: parseFloat(formData.unit_price) || 0,
         cost_price: parseFloat(formData.cost_price) || 0,
-        quantity: parseInt(formData.quantity) || 0,
-        min_stock_level: parseInt(formData.min_stock_level) || 5,
+        quantity: formData.is_service ? 0 : (parseInt(formData.quantity) || 0),
+        min_stock_level: formData.is_service ? 0 : (parseInt(formData.min_stock_level) || 5),
         category_id: formData.category_id ? parseInt(formData.category_id) : null,
+        is_service: formData.is_service || false,
       };
 
       if (editingItem) {
@@ -234,7 +269,61 @@ const Items = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+              <div className="skeleton" style={{ width: 150, height: 24, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: 200, height: 16 }}></div>
+            </div>
+            <div className="d-flex gap-2">
+              <div className="skeleton" style={{ width: 120, height: 36, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 80, height: 36, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 80, height: 36, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 100, height: 36, borderRadius: 4 }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-12">
+          <div className="card">
+            <div className="card-body p-3">
+              <div className="skeleton" style={{ width: 200, height: 20, marginBottom: 16 }}></div>
+            </div>
+            <div className="table-responsive">
+              <table className="table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 100, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 50, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 40, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(8)].map((_, i) => (
+                    <tr key={i}>
+                      <td><div className="skeleton" style={{ width: 60, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 100, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 80, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 80, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 60, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 50, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 40, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 60, height: 16 }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -246,6 +335,10 @@ const Items = () => {
             <p className="text-muted mb-0">Manage your product inventory</p>
           </div>
           <div className="d-flex gap-2">
+            <button className="btn btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+              <i className={`ti ti-refresh ${refreshing ? 'fa-spin' : ''}`}></i>
+              {refreshing ? ' Refreshing...' : ' Refresh'}
+            </button>
             <button className="btn btn-outline-secondary" onClick={() => fileInputRef.current?.click()}>
               <i className="ti ti-upload me-1"></i>
               Import CSV/XLS
@@ -265,10 +358,12 @@ const Items = () => {
               <i className="ti ti-file-arrow-up me-1"></i>
               Template
             </button>
-            <button className="btn btn-primary" onClick={() => openModal()}>
-              <i className="ti ti-plus"></i>
-              Add Item
-            </button>
+            {isAdmin && (
+              <button className="btn btn-primary" onClick={() => openModal()}>
+                <i className="ti ti-plus"></i>
+                Add Item
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -289,8 +384,19 @@ const Items = () => {
                 />
               </div>
               <div className="d-flex gap-2">
-                <button className="btn btn-outline-secondary btn-sm">
-                  <i className="ti ti-filter"></i> Filter
+                <select
+                  className="form-select form-select-sm"
+                  value={categoryFilter}
+                  onChange={(e) => setCategoryFilter(e.target.value)}
+                  style={{ width: 'auto' }}
+                >
+                  <option value="">All Categories</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.id}>{cat.name}</option>
+                  ))}
+                </select>
+                <button className="btn btn-outline-secondary btn-sm" onClick={() => setCategoryFilter('')}>
+                  <i className="ti ti-x"></i> Clear
                 </button>
               </div>
             </div>
@@ -314,23 +420,46 @@ const Items = () => {
                 {items.map(item => (
                   <tr key={item.id} className="align-middle">
                     <td>{item.sku}</td>
-                    <td>{item.name}</td>
+                    <td>
+                      <div className="d-flex align-items-center gap-2">
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name}
+                            className="rounded"
+                            style={{ width: 36, height: 36, objectFit: 'cover' }}
+                          />
+                        ) : (
+                          <div 
+                            className="rounded bg-light d-flex align-items-center justify-content-center"
+                            style={{ width: 36, height: 36 }}
+                          >
+                            <i className="ti ti-package text-muted"></i>
+                          </div>
+                        )}
+                        <span>{item.name}</span>
+                      </div>
+                    </td>
                     <td>{item.category_name || '-'}</td>
                     <td>TSH {parseFloat(item.unit_price).toLocaleString()}</td>
                     <td>TSH {parseFloat(item.cost_price || 0).toLocaleString()}</td>
                     <td className={item.is_low_stock ? 'text-danger fw-semibold' : ''}>{item.quantity}</td>
                     <td>{item.min_stock_level}</td>
                     <td>
-                      <button onClick={() => openModal(item)} className="table-action-btn" disabled={saving || deletingId}>
-                        <i className="ti ti-edit"></i>
-                      </button>
-                      <button onClick={() => handleDelete(item.id)} className="table-action-btn danger" disabled={deletingId === item.id}>
-                        {deletingId === item.id ? (
-                          <span className="spinner-border spinner-border-sm"></span>
-                        ) : (
-                          <i className="ti ti-trash"></i>
-                        )}
-                      </button>
+                      {isAdmin && (
+                        <>
+                          <button onClick={() => openModal(item)} className="table-action-btn" disabled={saving || deletingId}>
+                            <i className="ti ti-edit"></i>
+                          </button>
+                          <button onClick={() => handleDelete(item.id)} className="table-action-btn danger" disabled={deletingId === item.id}>
+                            {deletingId === item.id ? (
+                              <span className="spinner-border spinner-border-sm"></span>
+                            ) : (
+                              <i className="ti ti-trash"></i>
+                            )}
+                          </button>
+                        </>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -403,6 +532,55 @@ const Items = () => {
                       </select>
                     </div>
                   </div>
+                  <div className="col-12 mb-3">
+                    <label className="form-label">Item Image</label>
+                    <div className="d-flex align-items-start gap-3">
+                      <div className="flex-shrink-0">
+                        {formData.image_url ? (
+                          <div className="position-relative" style={{ width: 100, height: 100 }}>
+                            <img 
+                              src={formData.image_url} 
+                              alt="Item" 
+                              className="rounded border"
+                              style={{ width: 100, height: 100, objectFit: 'cover' }}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-sm btn-danger position-absolute"
+                              style={{ top: -8, right: -8 }}
+                              onClick={() => setFormData({ ...formData, image_url: '' })}
+                            >
+                              <i className="ti ti-x"></i>
+                            </button>
+                          </div>
+                        ) : (
+                          <div 
+                            className="border rounded d-flex align-items-center justify-content-center"
+                            style={{ width: 100, height: 100, cursor: 'pointer', backgroundColor: '#f8f9fa' }}
+                            onClick={() => document.getElementById('imageInput').click()}
+                          >
+                            {imageUploading ? (
+                              <span className="spinner-border spinner-border-sm"></span>
+                            ) : (
+                              <i className="ti ti-plus" style={{ fontSize: 24, color: '#6c757d' }}></i>
+                            )}
+                          </div>
+                        )}
+                        <input
+                          type="file"
+                          id="imageInput"
+                          accept="image/*"
+                          className="d-none"
+                          onChange={handleImageUpload}
+                          disabled={imageUploading}
+                        />
+                      </div>
+                      <div className="text-muted small">
+                        Click to upload image<br/>
+                        (JPG, PNG, max 5MB)
+                      </div>
+                    </div>
+                  </div>
                   <div className="col-md-6">
                     <div className="form-group">
                       <label className="form-label">Unit Price (TSH) *</label>
@@ -428,6 +606,22 @@ const Items = () => {
                       />
                     </div>
                   </div>
+                  <div className="col-12 mb-3">
+                    <div className="form-check">
+                      <input
+                        type="checkbox"
+                        className="form-check-input"
+                        id="isService"
+                        checked={formData.is_service || false}
+                        onChange={(e) => setFormData({...formData, is_service: e.target.checked})}
+                      />
+                      <label className="form-check-label" htmlFor="isService">
+                        This is a service (no stock tracking)
+                      </label>
+                    </div>
+                  </div>
+                  {!formData.is_service && (
+                  <div className="row">
                   <div className="col-md-6">
                     <div className="form-group">
                       <label className="form-label">Quantity</label>
@@ -450,6 +644,8 @@ const Items = () => {
                       />
                     </div>
                   </div>
+                  </div>
+                  )}
                 </div>
               </div>
               <div className="modal-footer">

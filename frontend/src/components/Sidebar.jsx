@@ -1,37 +1,43 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ collapsed }) => {
+const Sidebar = ({ collapsed, alertCount = 0 }) => {
   const location = useLocation();
   const { logout, isAdmin } = useAuth();
 
   const menuItems = [
-    { path: '/', icon: 'ti-home', label: 'Dashboard' },
-    { path: '/pos', icon: 'ti-shopping-cart', label: 'POS' },
-    { path: '/items', icon: 'ti-box', label: 'Items', adminOnly: true },
-    { path: '/categories', icon: 'ti-tags', label: 'Categories', adminOnly: true },
-    { path: '/stock', icon: 'ti-archive', label: 'Stock', adminOnly: true },
+    { path: '/', icon: 'ti-home', label: 'Dashboard', alertPath: '/' },
+    { path: '/admin', icon: 'ti-layout', label: 'Admin Dashboard' },
+    { path: '/pos', icon: 'ti-shopping-cart', label: 'POS', alertPath: '/pos' },
+    { path: '/analytics', icon: 'ti-chart-line', label: 'Analytics' },
+    { path: '/services', icon: 'ti-printer', label: 'Services', adminOnly: true, adminViewOnly: true },
+    { path: '/items', icon: 'ti-box', label: 'Items', adminOnly: true, adminViewOnly: true, alertPath: '/items' },
+    { path: '/categories', icon: 'ti-tags', label: 'Categories', adminOnly: true, adminViewOnly: true },
+    { path: '/stock', icon: 'ti-archive', label: 'Stock', adminOnly: true, adminViewOnly: true, alertPath: '/stock' },
     { path: '/sales', icon: 'ti-receipt', label: 'Sales' },
-    { path: '/reports', icon: 'ti-chart-bar', label: 'Reports' },
+    { path: '/reports', icon: 'ti-chart-bar', label: 'Reports', adminOnly: true, adminExportOnly: true },
     ...(isAdmin() ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
   ];
 
   const filteredMenu = menuItems.filter(item => !item.adminOnly || isAdmin());
 
+  const needsAttention = (item) => {
+    if (!item.alertPath) return false;
+    return item.alertPath === '/' && alertCount > 0 ||
+           item.alertPath === '/stock' && alertCount > 0 ||
+           item.alertPath === '/items' && alertCount > 0;
+  };
+
   return (
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
       <div className="logo-area">
-        <div className="logo-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="24" height="24" rx="4" fill="#E66239"/>
-            <text x="12" y="17" textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">PP</text>
-          </svg>
-        </div>
-        <span className="logo-text">
-          <svg height="18" viewBox="0 0 100 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <text x="0" y="18" fill="#262626" fontSize="14" fontWeight="bold" fontFamily="Poppins, sans-serif">Pawin PyPOS</text>
-          </svg>
-        </span>
+        <img 
+          src="/logo1.png" 
+          alt="Pawin PyPOS" 
+          className="logo-img"
+          style={{ width: 32, height: 32, objectFit: 'contain' }}
+        />
+        <span className="logo-text">Pawin PyPOS</span>
       </div>
 
       <nav className="nav">
@@ -44,6 +50,7 @@ const Sidebar = ({ collapsed }) => {
             >
               <i className={`ti ${item.icon}`}></i>
               <span className="nav-text">{item.label}</span>
+              {needsAttention(item) && <span className="nav-dot"></span>}
             </Link>
           </li>
         ))}

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { itemsAPI, salesAPI } from '../services/supabase';
+import { getCurrentTimestamp, getRelativeTime } from '../utils/timeUtils';
 import toast from 'react-hot-toast';
 
 const Notifications = () => {
@@ -22,7 +23,7 @@ const Notifications = () => {
       const notifs = [];
 
       // Low stock alerts
-      const lowStockItems = (items || []).filter(item => item.quantity <= item.min_stock_level);
+      const lowStockItems = (items || []).filter(item => item.is_service !== true && item.quantity <= item.min_stock_level);
       lowStockItems.forEach(item => {
         notifs.push({
           id: `low-stock-${item.id}`,
@@ -30,13 +31,13 @@ const Notifications = () => {
           icon: 'ti-alert-triangle',
           title: 'Low Stock Alert',
           message: `${item.name} (SKU: ${item.sku}) is running low. Current stock: ${item.quantity}, Min level: ${item.min_stock_level}`,
-          time: new Date().toISOString(),
+          time: getCurrentTimestamp(),
           read: false
         });
       });
 
       // Out of stock alerts
-      const outOfStock = (items || []).filter(item => item.quantity === 0);
+      const outOfStock = (items || []).filter(item => item.is_service !== true && item.quantity === 0);
       outOfStock.forEach(item => {
         notifs.push({
           id: `out-stock-${item.id}`,
@@ -44,7 +45,7 @@ const Notifications = () => {
           icon: 'ti-x',
           title: 'Out of Stock',
           message: `${item.name} (SKU: ${item.sku}) is out of stock!`,
-          time: new Date().toISOString(),
+          time: getCurrentTimestamp(),
           read: false
         });
       });
@@ -74,7 +75,7 @@ const Notifications = () => {
           icon: 'ti-calendar',
           title: "Today's Summary",
           message: `${todaySales.length} transactions completed. Total: TSH ${todayTotal.toLocaleString()}`,
-          time: new Date().toISOString(),
+          time: getCurrentTimestamp(),
           read: false
         });
       }
@@ -86,7 +87,7 @@ const Notifications = () => {
         icon: 'ti-info-circle',
         title: 'Welcome to Pawin PyPOS',
         message: 'Your stationery inventory system is ready. Start by adding products or processing sales.',
-        time: new Date().toISOString(),
+        time: getCurrentTimestamp(),
         read: false
       });
 
@@ -124,16 +125,7 @@ const Notifications = () => {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const formatTime = (time) => {
-    const date = new Date(time);
-    const now = new Date();
-    const diff = now - date;
-    
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)} min ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)} hours ago`;
-    return date.toLocaleDateString();
-  };
+  const formatTime = (time) => getRelativeTime(time);
 
   const getTypeStyles = (type) => {
     switch (type) {
@@ -150,7 +142,34 @@ const Notifications = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading notifications...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <div className="skeleton" style={{ width: 150, height: 28, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: 180, height: 18 }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-12">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="card mb-3">
+              <div className="card-body">
+                <div className="d-flex gap-3">
+                  <div className="skeleton" style={{ width: 40, height: 40, borderRadius: 20 }}></div>
+                  <div className="flex-grow-1">
+                    <div className="skeleton" style={{ width: 120, height: 18, marginBottom: 8 }}></div>
+                    <div className="skeleton" style={{ width: '60%', height: 16, marginBottom: 4 }}></div>
+                    <div className="skeleton" style={{ width: '40%', height: 14 }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

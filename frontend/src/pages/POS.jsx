@@ -17,6 +17,16 @@ const POS = () => {
   const [showReceipt, setShowReceipt] = useState(false);
   const [lastSale, setLastSale] = useState(null);
   const [addingToCart, setAddingToCart] = useState(null);
+  const [showMoreServices, setShowMoreServices] = useState(false);
+
+  // Main services to show first
+  const mainServices = ['black & white printing', 'document scanning', 'binding'];
+  const primaryServices = serviceItems.filter(s => 
+    mainServices.some(ms => s.name.toLowerCase().includes(ms))
+  );
+  const otherServices = serviceItems.filter(s => 
+    !mainServices.some(ms => s.name.toLowerCase().includes(ms))
+  );
 
   useEffect(() => {
     loadData();
@@ -30,15 +40,16 @@ const POS = () => {
       ]);
       setCategories(cats || []);
       
+      // Regular items (not services)
       const filteredItems = (allItems || []).filter(item => 
         item.is_active !== false && 
-        item.category_name?.toLowerCase() !== 'stationery services'
+        item.is_service !== true
       );
       setItems(filteredItems);
       
+      // Service items (is_service = true)
       const services = (allItems || []).filter(item => 
-        item.category_name?.toLowerCase() === 'stationery services' ||
-        item.category_name?.toLowerCase() === 'printing & scanning'
+        item.is_service === true
       );
       setServiceItems(services);
     } catch (error) {
@@ -55,8 +66,7 @@ const POS = () => {
       const data = await itemsAPI.getAll(params);
       const filtered = (data || []).filter(item => 
         item.is_active !== false && 
-        item.category_name?.toLowerCase() !== 'stationery services' &&
-        item.category_name?.toLowerCase() !== 'printing & scanning'
+        item.is_service !== true
       );
       setItems(filtered);
     } catch (error) {
@@ -76,7 +86,8 @@ const POS = () => {
     setTimeout(() => {
       const existingItem = cart.find(cartItem => cartItem.item_id === item.id);
       if (existingItem) {
-        if (existingItem.quantity >= item.quantity && item.quantity > 0) {
+        // For service items, no stock check needed
+        if (item.is_service || existingItem.quantity >= item.quantity && item.quantity > 0) {
           setCart(cart.map(cartItem =>
             cartItem.item_id === item.id
               ? { ...cartItem, quantity: cartItem.quantity + 1, subtotal: (cartItem.quantity + 1) * cartItem.unit_price }
@@ -94,7 +105,7 @@ const POS = () => {
           unit_price: parseFloat(item.unit_price),
           quantity: 1,
           subtotal: parseFloat(item.unit_price),
-          max_qty: item.quantity
+          max_qty: item.is_service ? 9999 : item.quantity // Service items have unlimited quantity
         }]);
         toast.success(`Added ${item.name} to cart`);
       }
@@ -194,7 +205,46 @@ const POS = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="row">
+        <div className="col-12 mb-4">
+          <div className="skeleton" style={{ width: 120, height: 28, marginBottom: 8 }}></div>
+          <div className="skeleton" style={{ width: 180, height: 18 }}></div>
+        </div>
+        <div className="col-lg-8">
+          <div className="card">
+            <div className="card-header">
+              <div className="skeleton" style={{ width: 100, height: 20 }}></div>
+            </div>
+            <div className="card-body">
+              <div className="row g-2">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="col-4 col-md-3">
+                    <div className="card p-3 text-center">
+                      <div className="skeleton mx-auto mb-2" style={{ width: 40, height: 40, borderRadius: 8 }}></div>
+                      <div className="skeleton" style={{ width: '80%', height: 14, margin: '0 auto 4px' }}></div>
+                      <div className="skeleton" style={{ width: '50%', height: 16, margin: '0 auto' }}></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-4">
+          <div className="card">
+            <div className="card-header">
+              <div className="skeleton" style={{ width: 80, height: 20 }}></div>
+            </div>
+            <div className="card-body p-3">
+              <div className="skeleton" style={{ width: '100%', height: 60, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: '60%', height: 18, marginBottom: 4 }}></div>
+              <div className="skeleton" style={{ width: '40%', height: 24 }}></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -213,27 +263,27 @@ const POS = () => {
               <h5 className="mb-0"><i className="ti ti-printer me-2"></i>Stationery Services</h5>
             </div>
             <div className="card-body p-3">
-              <div className="d-flex gap-3 justify-content-start flex-wrap">
-                {serviceItems.map(service => (
+              <div className="d-flex gap-2 justify-content-start flex-wrap">
+                {primaryServices.map(service => (
                   <div 
                     key={service.id} 
-                    className={`service-item-card p-3 ${addingToCart === service.id ? 'adding-to-cart' : ''}`}
+                    className={`service-item-card p-2 ${addingToCart === service.id ? 'adding-to-cart' : ''}`}
                     onClick={() => addToCart(service)}
                     style={{
                       background: 'linear-gradient(135deg, rgba(230, 98, 57, 0.1) 0%, rgba(230, 98, 57, 0.02) 100%)',
                       border: addingToCart === service.id ? '2px solid var(--primary)' : '2px dashed var(--primary)',
-                      borderRadius: '12px',
+                      borderRadius: '8px',
                       cursor: 'pointer',
                       transition: 'all 0.2s',
-                      minWidth: '180px',
-                      minHeight: '120px',
+                      minWidth: '120px',
+                      minHeight: '80px',
                       display: 'flex',
                       flexDirection: 'column',
                       justifyContent: 'center',
                       alignItems: 'center',
                       textAlign: 'center',
                       flex: '1',
-                      maxWidth: '250px',
+                      maxWidth: '160px',
                       position: 'relative',
                       opacity: addingToCart === service.id ? 0.7 : 1
                     }}
@@ -243,14 +293,35 @@ const POS = () => {
                         <span className="spinner-border spinner-border-sm"></span>
                       </div>
                     )}
-                    <div className="mb-2">
-                      <i className={`ti ${service.name.toLowerCase().includes('print') ? 'ti-printer' : 'ti-scan'}`} style={{ fontSize: '32px', color: 'var(--primary)' }}></i>
+                    <div className="mb-1">
+                      <i className={`ti ${service.name.toLowerCase().includes('print') ? 'ti-printer' : 'ti-scan'}`} style={{ fontSize: '20px', color: 'var(--primary)' }}></i>
                     </div>
-                    <h5 className="mb-1" style={{ color: 'var(--text-primary)' }}>{service.name}</h5>
-                    <h4 className="mb-1 text-primary">TSH {parseFloat(service.unit_price).toLocaleString()}</h4>
-                    <small className="text-muted">Click to add</small>
+                    <h6 className="mb-0" style={{ color: 'var(--text-primary)', fontSize: '11px' }}>{service.name}</h6>
+                    <h6 className="mb-0 text-primary" style={{ fontSize: '13px' }}>TSH {parseFloat(service.unit_price).toLocaleString()}</h6>
+                    <small className="text-muted" style={{ fontSize: '10px' }}>Click to add</small>
                   </div>
                 ))}
+                
+                {otherServices.length > 0 && (
+                  <div 
+                    className="p-2 d-flex flex-column justify-content-center align-items-center"
+                    onClick={() => setShowMoreServices(true)}
+                    style={{
+                      background: 'var(--gray-50)',
+                      border: '2px dashed var(--gray-300)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      minWidth: '80px',
+                      minHeight: '80px',
+                      flex: '1',
+                      maxWidth: '120px'
+                    }}
+                  >
+                    <i className="ti ti-plus" style={{ fontSize: '20px', color: 'var(--gray-400)' }}></i>
+                    <span className="mb-0 mt-1" style={{ color: 'var(--gray-500)', fontSize: '11px' }}>More</span>
+                    <small className="text-muted">({otherServices.length})</small>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -276,7 +347,7 @@ const POS = () => {
                 style={{ width: 'auto', minWidth: 150 }}
               >
                 <option value="">All Categories</option>
-                {categories.filter(c => c.name.toLowerCase() !== 'stationery services' && c.name.toLowerCase() !== 'printing & scanning').map(cat => (
+                {categories.map(cat => (
                   <option key={cat.id} value={cat.id}>{cat.name}</option>
                 ))}
               </select>
@@ -442,7 +513,7 @@ const POS = () => {
             <div className="modal-body">
               <div className="text-center border-bottom pb-3 mb-3">
                 <h4 className="mb-1" style={{ color: 'var(--text-primary)' }}>Pawin PyPOS</h4>
-                <p className="text-muted mb-1 small">University Stationery Store</p>
+                <p className="text-muted mb-1 small">Pawin PyPOS Stationery</p>
                 <p className="text-muted mb-0 small">{lastSale.date.toLocaleString()}</p>
               </div>
 
@@ -482,6 +553,57 @@ const POS = () => {
               <button onClick={closeReceipt} className="btn btn-primary w-100">
                 Close
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showMoreServices && otherServices.length > 0 && (
+        <div className="modal-overlay" onClick={() => setShowMoreServices(false)}>
+          <div className="modal" style={{ maxWidth: 500 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">More Services</h3>
+              <button onClick={() => setShowMoreServices(false)} className="modal-close">
+                <i className="ti ti-x"></i>
+              </button>
+            </div>
+            <div className="modal-body">
+              <div className="d-flex gap-3 justify-content-start flex-wrap">
+                {otherServices.map(service => (
+                  <div 
+                    key={service.id} 
+                    className={`service-item-card p-3 ${addingToCart === service.id ? 'adding-to-cart' : ''}`}
+                    onClick={() => {
+                      addToCart(service);
+                      setShowMoreServices(false);
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(230, 98, 57, 0.1) 0%, rgba(230, 98, 57, 0.02) 100%)',
+                      border: addingToCart === service.id ? '2px solid var(--primary)' : '2px dashed var(--primary)',
+                      borderRadius: '12px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s',
+                      minWidth: '140px',
+                      minHeight: '100px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      textAlign: 'center',
+                      flex: '1',
+                      maxWidth: '200px',
+                      position: 'relative',
+                      opacity: addingToCart === service.id ? 0.7 : 1
+                    }}
+                  >
+                    <div className="mb-2">
+                      <i className={`ti ${service.name.toLowerCase().includes('print') ? 'ti-printer' : 'ti-scan'}`} style={{ fontSize: '24px', color: 'var(--primary)' }}></i>
+                    </div>
+                    <h6 className="mb-1" style={{ color: 'var(--text-primary)' }}>{service.name}</h6>
+                    <h5 className="mb-0 text-primary">TSH {parseFloat(service.unit_price).toLocaleString()}</h5>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

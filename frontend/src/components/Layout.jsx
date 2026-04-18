@@ -175,15 +175,15 @@ const Layout = () => {
           </button>
         </div>
 
-        <ul className="list-unstyled d-flex align-items-center mb-0 gap-1">
-          <li className="me-2">
+        <ul className="list-unstyled d-flex align-items-center mb-0 gap-2">
+          <li>
             <button className="theme-toggle" onClick={toggleDarkMode} title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}>
               <i className="ti ti-sun theme-toggle-icon sun"></i>
               <i className="ti ti-moon theme-toggle-icon moon"></i>
             </button>
           </li>
 
-          <li className="position-relative" ref={notifRef}>
+          <li className="d-flex align-items-center gap-2 me-1" ref={notifRef}>
             <button 
               className="btn-icon btn-sm btn-light btn rounded-circle"
               onClick={() => { setNotifDropdownOpen(!notifDropdownOpen); if (!notifDropdownOpen) loadNotifications(); }}

@@ -66,7 +66,45 @@ const Users = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <div className="skeleton" style={{ width: 150, height: 28, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: 200, height: 18 }}></div>
+            </div>
+            <div className="skeleton" style={{ width: 100, height: 36, borderRadius: 4 }}></div>
+          </div>
+        </div>
+        <div className="col-12">
+          <div className="card">
+            <div className="table-responsive">
+              <table className="table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 150, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 120, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(6)].map((_, i) => (
+                    <tr key={i}>
+                      <td><div className="skeleton" style={{ width: 40, height: 40, borderRadius: 20 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 150, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 100, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 60, height: 16 }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (

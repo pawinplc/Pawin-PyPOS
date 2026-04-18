@@ -2,30 +2,36 @@ import { useState, useEffect } from 'react';
 import { salesAPI, stockAPI } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 import toast from 'react-hot-toast';
 
-const Reports = () => {
-  const { isAdmin } = useAuth();
+const Reports = ({ isAdmin: propIsAdmin }) => {
+  const { isAdmin: authIsAdmin } = useAuth();
+  const isAdmin = propIsAdmin ?? authIsAdmin;
   const [reportData, setReportData] = useState({
     dailySales: [],
     monthlySales: [],
     stockMovements: []
   });
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     loadReports();
   }, []);
 
-  const loadReports = async () => {
+  const loadReports = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (!isRefresh) setLoading(true);
       const [sales, movements] = await Promise.all([
         salesAPI.getAll(),
         stockAPI.getMovements({})
       ]);
 
-      const today = new Date().toISOString().split('T')[0];
+      // Use local date (same as Sales page and Android)
+      const now = new Date();
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T`;
       const dailySales = (sales || []).filter(s => 
         s.created_at && s.created_at.startsWith(today)
       );
@@ -53,8 +59,17 @@ const Reports = () => {
     } catch (error) {
       console.error('Failed to load reports:', error);
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadReports(true);
   };
 
   const dailyTotal = reportData.dailySales.reduce((sum, s) => sum + parseFloat(s?.final_amount || 0), 0);
@@ -120,6 +135,44 @@ const Reports = () => {
     toast.success('Daily sales exported!');
   };
 
+  const exportDailySalesPdf = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('PAWIN PYPOS - DAILY SALES REPORT', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Report Date: ${getFormattedDate()}`, 14, 28);
+
+    const tableData = [];
+    reportData.dailySales.forEach(sale => {
+      sale.sale_items?.forEach((item, idx) => {
+        tableData.push([
+          idx === 0 ? `#${String(sale.id).padStart(5, '0')}` : '',
+          idx === 0 ? new Date(sale.created_at).toLocaleString() : '',
+          item.category_name || '-',
+          item.item_name || '-',
+          item.quantity,
+          parseFloat(item.unit_price || 0).toFixed(2),
+          parseFloat(item.subtotal || 0).toFixed(2)
+        ]);
+      });
+    });
+
+    doc.autoTable({
+      head: [['Receipt #', 'Date & Time', 'Category', 'Item', 'Qty', 'Unit Price', 'Subtotal']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.text(`GRAND TOTAL: TSH${dailyTotal.toFixed(2)}`, 140, finalY);
+
+    doc.save(`daily_sales_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success('Daily sales PDF exported!');
+  };
+
   const exportMonthlySales = () => {
     const headers = [
       ['PAWIN PYPOS - MONTHLY SALES REPORT'],
@@ -177,6 +230,57 @@ const Reports = () => {
     toast.success('Monthly sales exported!');
   };
 
+  const exportMonthlySalesPdf = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('PAWIN PYPOS - MONTHLY SALES REPORT', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Report Date: ${getFormattedDate()}`, 14, 28);
+
+    const tableData = [];
+    let grandTotal = 0;
+    
+    reportData.monthlySales.forEach(monthData => {
+      const monthSales = reportData.dailySales.filter(s => 
+        s.created_at && s.created_at.substring(0, 7) === monthData.month
+      );
+      
+      if (monthSales.length > 0) {
+        tableData.push(['', `--- ${monthData.month} ---`, '', '', '', `Tx: ${monthData.count}`, `Total: TSH${monthData.total.toFixed(2)}`]);
+        
+        monthSales.forEach(sale => {
+          sale.sale_items?.forEach((item, idx) => {
+            tableData.push([
+              idx === 0 ? `#${String(sale.id).padStart(5, '0')}` : '',
+              idx === 0 ? new Date(sale.created_at).toLocaleString() : '',
+              item.category_name || '-',
+              item.item_name || '-',
+              item.quantity,
+              parseFloat(item.unit_price || 0).toFixed(2),
+              parseFloat(item.subtotal || 0).toFixed(2)
+            ]);
+          });
+          grandTotal += parseFloat(sale.final_amount || 0);
+        });
+      }
+    });
+
+    doc.autoTable({
+      head: [['Receipt #', 'Date & Time', 'Category', 'Item', 'Qty', 'Unit Price', 'Subtotal']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.text(`GRAND TOTAL: TSH${grandTotal.toFixed(2)}`, 140, finalY);
+
+    doc.save(`monthly_sales_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success('Monthly sales PDF exported!');
+  };
+
   const exportStockArrivals = () => {
     const headers = [
       ['PAWIN PYPOS - STOCK ARRIVALS REPORT'],
@@ -214,6 +318,39 @@ const Reports = () => {
     XLSX.utils.book_append_sheet(wb, ws, 'Stock Arrivals');
     XLSX.writeFile(wb, `stock_arrivals_${new Date().toISOString().split('T')[0]}.xlsx`);
     toast.success('Stock arrivals exported!');
+  };
+
+  const exportStockArrivalsPdf = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('PAWIN PYPOS - STOCK ARRIVALS REPORT', 14, 20);
+    doc.setFontSize(10);
+    doc.text(`Report Date: ${getFormattedDate()}`, 14, 28);
+
+    const tableData = reportData.stockMovements.map((m, index) => [
+      index + 1,
+      new Date(m.created_at).toLocaleString(),
+      m.item_name || '-',
+      m.category_name || '-',
+      m.quantity,
+      m.reference || '-',
+      m.notes || '-'
+    ]);
+
+    doc.autoTable({
+      head: [['#', 'Date', 'Item', 'Category', 'Qty', 'Reference', 'Notes']],
+      body: tableData,
+      startY: 35,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [41, 128, 185] }
+    });
+
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(10);
+    doc.text(`TOTAL ITEMS RECEIVED: ${totalArrivals}`, 14, finalY);
+
+    doc.save(`stock_arrivals_${new Date().toISOString().split('T')[0]}.pdf`);
+    toast.success('Stock arrivals PDF exported!');
   };
 
   const exportAllReports = () => {
@@ -326,7 +463,94 @@ const Reports = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading reports...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+            <div>
+              <div className="skeleton" style={{ width: 150, height: 24, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: 250, height: 16 }}></div>
+            </div>
+            <div className="d-flex gap-2">
+              <div className="skeleton" style={{ width: 70, height: 32, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 70, height: 32, borderRadius: 4 }}></div>
+              <div className="skeleton" style={{ width: 80, height: 32, borderRadius: 4 }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-12">
+          <div className="row g-3 mb-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="col-sm-6 col-lg-3">
+                <div className="card p-3 h-100">
+                  <div className="d-flex gap-3 align-items-center">
+                    <div className="skeleton" style={{ width: 48, height: 48, borderRadius: 4 }}></div>
+                    <div>
+                      <div className="skeleton" style={{ width: 60, height: 14, marginBottom: 4 }}></div>
+                      <div className="skeleton" style={{ width: 80, height: 20 }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="card">
+            <div className="card-header bg-white px-4 py-3">
+              <div className="skeleton" style={{ width: 100, height: 18 }}></div>
+            </div>
+            <div className="table-responsive">
+              <table className="table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(5)].map((_, i) => (
+                    <tr key={i}>
+                      <td><div className="skeleton" style={{ width: 70, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 50, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 70, height: 16 }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div className="col-lg-6">
+          <div className="card">
+            <div className="card-header bg-white px-4 py-3">
+              <div className="skeleton" style={{ width: 120, height: 18 }}></div>
+            </div>
+            <div className="table-responsive">
+              <table className="table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(5)].map((_, i) => (
+                    <tr key={i}>
+                      <td><div className="skeleton" style={{ width: 70, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 50, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 70, height: 16 }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -338,22 +562,44 @@ const Reports = () => {
             <p className="text-muted mb-0">View your inventory analytics and reports</p>
           </div>
           <div className="d-flex gap-2 flex-wrap">
-            <button className="btn btn-outline-secondary btn-sm" onClick={exportDailySales}>
-              <i className="ti ti-file-export me-1"></i>
-              Daily
+            <button className="btn btn-outline-secondary btn-sm" onClick={handleRefresh} disabled={refreshing}>
+              <i className={`ti ti-refresh ${refreshing ? 'fa-spin' : ''}`}></i>
+              {refreshing ? ' Refreshing...' : ' Refresh'}
             </button>
-            <button className="btn btn-outline-secondary btn-sm" onClick={exportMonthlySales}>
-              <i className="ti ti-file-export me-1"></i>
-              Monthly
-            </button>
-            <button className="btn btn-outline-secondary btn-sm" onClick={exportStockArrivals}>
-              <i className="ti ti-package-export me-1"></i>
-              Stock
-            </button>
-            <button className="btn btn-primary btn-sm" onClick={exportAllReports}>
-              <i className="ti ti-download me-1"></i>
-              Export All
-            </button>
+            {!isAdmin && (
+              <>
+                <div className="dropdown">
+                  <button className="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                    <i className="ti ti-file-export me-1"></i>
+                    Excel
+                  </button>
+                  <ul className="dropdown-menu">
+                    <li><button className="dropdown-item" onClick={exportDailySales}>Daily Sales</button></li>
+                    <li><button className="dropdown-item" onClick={exportMonthlySales}>Monthly Sales</button></li>
+                    <li><button className="dropdown-item" onClick={exportStockArrivals}>Stock Arrivals</button></li>
+                    <li><hr className="dropdown-divider" /></li>
+                    <li><button className="dropdown-item fw-bold" onClick={exportAllReports}>Export All</button></li>
+                  </ul>
+                </div>
+                <div className="dropdown">
+                  <button className="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
+                    <i className="ti ti-file-type-pdf me-1"></i>
+                    PDF
+                  </button>
+                  <ul className="dropdown-menu">
+                    <li><button className="dropdown-item" onClick={exportDailySalesPdf}>Daily Sales</button></li>
+                    <li><button className="dropdown-item" onClick={exportMonthlySalesPdf}>Monthly Sales</button></li>
+                    <li><button className="dropdown-item" onClick={exportStockArrivalsPdf}>Stock Arrivals</button></li>
+                  </ul>
+                </div>
+              </>
+            )}
+            {isAdmin && (
+              <button className="btn btn-outline-secondary btn-sm" onClick={exportStockArrivals}>
+                <i className="ti ti-package-export me-1"></i>
+                Export System Health
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -437,7 +683,7 @@ const Reports = () => {
         </div>
       </div>
 
-      {isAdmin() && reportData.stockMovements.length > 0 && (
+      {isAdmin && reportData.stockMovements.length > 0 && (
         <div className="col-12">
           <div className="card">
             <div className="card-body p-4">

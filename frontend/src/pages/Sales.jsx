@@ -1,28 +1,56 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { salesAPI } from '../services/supabase';
+import { salesAPI, subscribeToSales } from '../services/supabase';
 import toast from 'react-hot-toast';
 
 const Sales = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [selectedSale, setSelectedSale] = useState(null);
   const [viewingId, setViewingId] = useState(null);
 
   useEffect(() => {
     loadSales();
+    
+    // Real-time subscription for sales changes
+    const unsubscribe = subscribeToSales((payload) => {
+      console.log('Sale change detected:', payload);
+      // Reload data on any change (INSERT, UPDATE, DELETE)
+      loadSales();
+      toast.success('New sale detected!', { icon: '🔥' });
+    });
+    
+    // Auto-refresh every 10 seconds as backup
+    const interval = setInterval(() => {
+      loadSales();
+    }, 10000);
+    
+    return () => {
+      unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
-  const loadSales = async () => {
+  const loadSales = async (isRefresh = false) => {
     try {
-      setLoading(true);
+      if (!isRefresh) setLoading(true);
       const data = await salesAPI.getAll();
       setSales(data || []);
     } catch (error) {
       toast.error('Failed to load sales');
     } finally {
-      setLoading(false);
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
+  };
+
+  const handleRefresh = () => {
+    setRefreshing(true);
+    loadSales(true);
   };
 
   const viewSale = (sale) => {
@@ -45,12 +73,13 @@ const Sales = () => {
 
   const getDateRange = (period) => {
     const now = new Date();
+    const todayKey = now.toISOString().split('T')[0];
     let start, end;
     
     switch (period) {
       case 'today':
-        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        start = new Date(todayKey + 'T00:00:00.000Z');
+        end = new Date(todayKey + 'T23:59:59.999Z');
         break;
       case 'week':
         const dayOfWeek = now.getDay();
@@ -78,6 +107,19 @@ const Sales = () => {
   };
 
   const calculateSales = (period) => {
+    if (period === 'today') {
+      const now = new Date();
+      // Use local date parts, not UTC, to match user's local day
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const todayKey = `${year}-${month}-${day}T`;
+      const filtered = sales.filter(sale => sale.created_at && sale.created_at.startsWith(todayKey));
+      const totalAmount = filtered.reduce((sum, sale) => sum + parseFloat(sale.final_amount || 0), 0);
+      const transactions = filtered.length;
+      const avgTransaction = transactions > 0 ? totalAmount / transactions : 0;
+      return { totalAmount, transactions, avgTransaction, period };
+    }
     const { start, end } = getDateRange(period);
     const filtered = sales.filter(sale => {
       const saleDate = new Date(sale.created_at);
@@ -103,7 +145,63 @@ const Sales = () => {
   };
 
   if (loading) {
-    return <div className="page-loading">Loading...</div>;
+    return (
+      <div className="row">
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <div>
+              <div className="skeleton" style={{ width: 150, height: 24, marginBottom: 8 }}></div>
+              <div className="skeleton" style={{ width: 200, height: 16 }}></div>
+            </div>
+          </div>
+        </div>
+        <div className="col-12">
+          <div className="row g-3 mb-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="col-sm-6 col-lg-3">
+                <div className="card p-3 h-100">
+                  <div className="d-flex gap-3 align-items-center">
+                    <div className="skeleton" style={{ width: 48, height: 48, borderRadius: 4 }}></div>
+                    <div>
+                      <div className="skeleton" style={{ width: 60, height: 14, marginBottom: 4 }}></div>
+                      <div className="skeleton" style={{ width: 100, height: 20 }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="col-12">
+          <div className="card">
+            <div className="table-responsive">
+              <table className="table mb-0">
+                <thead className="table-light">
+                  <tr>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 140, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 50, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
+                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...Array(8)].map((_, i) => (
+                    <tr key={i}>
+                      <td><div className="skeleton" style={{ width: 70, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 140, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 40, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 80, height: 16 }}></div></td>
+                      <td><div className="skeleton" style={{ width: 50, height: 16 }}></div></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -114,6 +212,10 @@ const Sales = () => {
             <h1 className="fs-3 mb-1">Sales History</h1>
             <p className="text-muted mb-0">View all sales transactions</p>
           </div>
+          <button className="btn btn-outline-secondary" onClick={handleRefresh} disabled={refreshing}>
+            <i className={`ti ti-refresh ${refreshing ? 'fa-spin' : ''}`}></i>
+            {refreshing ? ' Refreshing...' : ' Refresh'}
+          </button>
         </div>
       </div>
 
@@ -244,7 +346,7 @@ const Sales = () => {
             <div className="modal-body">
               <div className="text-center border-bottom pb-3 mb-3">
                 <h4 className="mb-1">Pawin PyPOS</h4>
-                <p className="text-muted mb-1 small">University Stationery Store</p>
+                <p className="text-muted mb-1 small">Pawin PyPOS Stationery</p>
                 <p className="text-muted mb-0 small">{formatDate(selectedSale.created_at)}</p>
               </div>
 
