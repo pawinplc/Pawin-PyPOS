@@ -179,16 +179,20 @@ const Layout = () => {
         collapsed={sidebarCollapsed} 
         onToggle={toggleSidebar}
         isMobile={isMobile}
+        mobileOpen={isMobile && sidebarMobileOpen}
       />
 
-      <nav className={`topbar ${sidebarCollapsed ? 'full' : ''}`}>
+      <nav className={`topbar ${isMobile ? '' : (sidebarCollapsed ? 'full' : '')}`}>
         <div className="d-flex align-items-center gap-2">
-          <button className="toggle-btn" onClick={toggleMobileMenu} title="Menu">
-            <i className={`ti ti-layout-sidebar-left-expand`}></i>
-          </button>
-          <button className="toggle-btn d-none d-lg-flex ms-2" onClick={toggleSidebar} title={sidebarCollapsed ? 'Expand' : 'Collapse'}>
-            <i className={`ti ${sidebarCollapsed ? 'ti-layout-sidebar-right-expand' : 'ti-layout-sidebar-left-expand'}`}></i>
-          </button>
+          {isMobile ? (
+            <button className="toggle-btn" onClick={toggleMobileMenu} title="Menu">
+              <i className="ti ti-menu-2"></i>
+            </button>
+          ) : (
+            <button className="toggle-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}>
+              <i className={`ti ${sidebarCollapsed ? 'ti-layout-sidebar-right-expand' : 'ti-layout-sidebar-left-expand'}`}></i>
+            </button>
+          )}
         </div>
 
         <ul className="list-unstyled d-flex align-items-center mb-0 gap-2">

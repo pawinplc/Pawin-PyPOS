@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ collapsed, alertCount = 0, isMobile = false }) => {
+const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = false }) => {
   const location = useLocation();
   const { logout, isAdmin } = useAuth();
 
@@ -28,7 +28,7 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false }) => {
   };
 
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${isMobile ? 'mobile-show' : ''}`}>
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-show' : ''}`}>
       <div className="logo-area">
         <img 
           src="/logo1.png" 
