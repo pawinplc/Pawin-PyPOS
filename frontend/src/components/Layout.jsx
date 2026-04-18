@@ -7,7 +7,8 @@ import { itemsAPI, salesAPI } from '../services/supabase';
 const Layout = () => {
   const { user, logout } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -22,7 +23,17 @@ const Layout = () => {
       setDarkMode(true);
       document.documentElement.setAttribute('data-theme', 'dark');
     }
+    const savedSidebar = localStorage.getItem('sidebarCollapsed');
+    if (savedSidebar === 'true') {
+      setSidebarCollapsed(true);
+    }
     loadNotifications();
+    
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 992);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   useEffect(() => {
@@ -96,15 +107,17 @@ const Layout = () => {
   };
 
   const toggleSidebar = () => {
-    setSidebarCollapsed(!sidebarCollapsed);
+    const newState = !sidebarCollapsed;
+    setSidebarCollapsed(newState);
+    localStorage.setItem('sidebarCollapsed', newState);
   };
 
   const toggleMobileMenu = () => {
-    setMobileMenuOpen(!mobileMenuOpen);
+    setSidebarMobileOpen(!sidebarMobileOpen);
   };
 
   const closeMobileMenu = () => {
-    setMobileMenuOpen(false);
+    setSidebarMobileOpen(false);
   };
 
   const toggleDarkMode = () => {
@@ -158,19 +171,22 @@ const Layout = () => {
     <div className="app-layout">
       <div 
         id="overlay" 
-        className={`overlay ${mobileMenuOpen ? 'show' : ''}`} 
+        className={`overlay ${sidebarMobileOpen ? 'show' : ''}`} 
         onClick={closeMobileMenu}
       ></div>
       
-      <Sidebar collapsed={sidebarCollapsed} onToggle={toggleSidebar} />
+      <Sidebar 
+        collapsed={sidebarCollapsed} 
+        onToggle={toggleSidebar}
+        isMobile={isMobile}
+      />
 
       <nav className={`topbar ${sidebarCollapsed ? 'full' : ''}`}>
         <div className="d-flex align-items-center gap-2">
-          <button className="toggle-btn d-lg-none" onClick={toggleMobileMenu}>
-            <i className="ti ti-layout-sidebar-left-expand"></i>
+          <button className="toggle-btn" onClick={toggleMobileMenu} title="Menu">
+            <i className={`ti ti-layout-sidebar-left-expand`}></i>
           </button>
-
-          <button className="toggle-btn d-none d-lg-flex" onClick={toggleSidebar}>
+          <button className="toggle-btn d-none d-lg-flex ms-2" onClick={toggleSidebar} title={sidebarCollapsed ? 'Expand' : 'Collapse'}>
             <i className={`ti ${sidebarCollapsed ? 'ti-layout-sidebar-right-expand' : 'ti-layout-sidebar-left-expand'}`}></i>
           </button>
         </div>
@@ -183,7 +199,7 @@ const Layout = () => {
             </button>
           </li>
 
-          <li className="d-flex align-items-center gap-2 me-1" ref={notifRef}>
+          <li className="d-flex align-items-center gap-2" ref={notifRef}>
             <button 
               className="btn-icon btn-sm btn-light btn rounded-circle"
               onClick={() => { setNotifDropdownOpen(!notifDropdownOpen); if (!notifDropdownOpen) loadNotifications(); }}
@@ -278,13 +294,25 @@ const Layout = () => {
             )}
           </li>
 
-          <li className="ms-2 dropdown" ref={dropdownRef}>
+<li className="d-flex align-items-center gap-2 dropdown" ref={dropdownRef}>
             <a 
               href="#" 
               role="button" 
               onClick={(e) => { e.preventDefault(); setDropdownOpen(!dropdownOpen); }}
+              className="d-flex align-items-center text-decoration-none"
             >
-              <div className="user-avatar-initials">{getInitials()}</div>
+              {user?.avatar_url ? (
+                <img 
+                  src={user.avatar_url} 
+                  alt={user?.full_name || user?.username}
+                  style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--primary)', color: 'white', fontWeight: 'bold', fontSize: '14px' }}>
+                  {getInitials()}
+                </div>
+              )}
+              <span className="ms-2 d-none d-md-inline text-dark" style={{ fontSize: '14px' }}>@{user?.username || 'user'}</span>
             </a>
             <div className={`dropdown-menu dropdown-menu-end p-0 ${dropdownOpen ? 'show' : ''}`} style={{ minWidth: 200 }}>
               <div>

@@ -1,13 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ collapsed, alertCount = 0 }) => {
+const Sidebar = ({ collapsed, alertCount = 0, isMobile = false }) => {
   const location = useLocation();
   const { logout, isAdmin } = useAuth();
 
   const menuItems = [
-    { path: '/', icon: 'ti-home', label: 'Dashboard', alertPath: '/' },
-    { path: '/admin', icon: 'ti-layout', label: 'Admin Dashboard' },
+    ...(isAdmin() ? [{ path: '/admin', icon: 'ti-layout', label: 'Dashboard' }] : [{ path: '/', icon: 'ti-home', label: 'Dashboard' }]),
     { path: '/pos', icon: 'ti-shopping-cart', label: 'POS', alertPath: '/pos' },
     { path: '/analytics', icon: 'ti-chart-line', label: 'Analytics' },
     { path: '/services', icon: 'ti-printer', label: 'Services', adminOnly: true, adminViewOnly: true },
@@ -29,7 +28,7 @@ const Sidebar = ({ collapsed, alertCount = 0 }) => {
   };
 
   return (
-    <aside className={`sidebar ${collapsed ? 'collapsed' : ''}`}>
+    <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${isMobile ? 'mobile-show' : ''}`}>
       <div className="logo-area">
         <img 
           src="/logo1.png" 
