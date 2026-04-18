@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { itemsAPI } from '../services/supabase';
+import { itemsAPI, subscribeToItems } from '../services/supabase';
 import toast from 'react-hot-toast';
 
 const Services = ({ isAdmin = false }) => {
@@ -12,6 +12,20 @@ const Services = ({ isAdmin = false }) => {
 
   useEffect(() => {
     loadServices();
+    
+    let unsubscribe;
+    try {
+      unsubscribe = subscribeToItems(() => loadServices());
+    } catch (error) {
+      console.warn('Realtime disabled:', error.message);
+    }
+    
+    const interval = setInterval(() => loadServices(), 10000);
+    
+    return () => {
+      if (unsubscribe) unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const loadServices = async () => {

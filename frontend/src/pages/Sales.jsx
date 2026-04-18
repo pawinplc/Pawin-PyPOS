@@ -14,12 +14,16 @@ const Sales = () => {
     loadSales();
     
     // Real-time subscription for sales changes
-    const unsubscribe = subscribeToSales((payload) => {
-      console.log('Sale change detected:', payload);
-      // Reload data on any change (INSERT, UPDATE, DELETE)
-      loadSales();
-      toast.success('New sale detected!', { icon: '🔥' });
-    });
+    let unsubscribe;
+    try {
+      unsubscribe = subscribeToSales((payload) => {
+        console.log('Sale change detected:', payload);
+        loadSales();
+        toast.success('New sale detected!', { icon: '🔥' });
+      });
+    } catch (error) {
+      console.warn('Realtime disabled:', error.message);
+    }
     
     // Auto-refresh every 10 seconds as backup
     const interval = setInterval(() => {
@@ -27,7 +31,7 @@ const Sales = () => {
     }, 10000);
     
     return () => {
-      unsubscribe();
+      if (unsubscribe) unsubscribe();
       clearInterval(interval);
     };
   }, []);

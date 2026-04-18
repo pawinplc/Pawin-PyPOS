@@ -374,18 +374,35 @@ export const analyticsAPI = {
 
 // Real-time subscription helper
 export const subscribeToTable = (table, callback) => {
-  const subscription = supabase
-    .channel('public:' + table)
-    .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
-      callback(payload);
-    })
-    .subscribe();
+  try {
+    const subscription = supabase
+      .channel('public:' + table)
+      .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
+        callback(payload);
+      })
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          console.log('Realtime subscribed to:', table);
+        }
+      });
 
-  return () => supabase.removeChannel(subscription);
+    return () => supabase.removeChannel(subscription);
+  } catch (error) {
+    console.warn('Realtime not available for:', table, error.message);
+    return () => {};
+  }
 };
 
 export const subscribeToSales = (callback) => {
   return subscribeToTable('sales', callback);
+};
+
+export const subscribeToItems = (callback) => {
+  return subscribeToTable('items', callback);
+};
+
+export const subscribeToCategories = (callback) => {
+  return subscribeToTable('categories', callback);
 };
 
 export { supabase as default };

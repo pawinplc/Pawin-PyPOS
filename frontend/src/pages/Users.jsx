@@ -13,6 +13,10 @@ const Users = () => {
 
   useEffect(() => {
     loadUsers();
+    
+    const interval = setInterval(() => loadUsers(), 10000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadUsers = async () => {

@@ -19,6 +19,10 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
 
   useEffect(() => {
     loadReports();
+    
+    const interval = setInterval(() => loadReports(true), 10000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   const loadReports = async (isRefresh = false) => {

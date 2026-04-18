@@ -2455,6 +2455,7 @@ footer {
 /* Tables Dark Mode */
 [data-theme="dark"] .table {
   color: var(--text-primary);
+  background: var(--bg-white);
 }
 
 [data-theme="dark"] .table-light {
@@ -2468,10 +2469,26 @@ footer {
 
 [data-theme="dark"] .table td {
   border-color: var(--border-color);
+  background: var(--bg-white);
+  color: var(--text-primary);
 }
 
 [data-theme="dark"] .table th {
   border-color: var(--border-color);
+  background: var(--gray-100);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .table tbody tr {
+  background: var(--bg-white);
+}
+
+[data-theme="dark"] .table tbody tr:nth-child(even) {
+  background: var(--gray-50);
+}
+
+[data-theme="dark"] .table tbody tr:nth-child(even):hover {
+  background: var(--gray-100);
 }
 
 /* Forms Dark Mode */

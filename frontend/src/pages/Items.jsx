@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { itemsAPI, categoriesAPI } from '../services/supabase';
+import { itemsAPI, categoriesAPI, subscribeToItems } from '../services/supabase';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 
@@ -28,6 +28,20 @@ const Items = ({ isAdmin = false }) => {
 
   useEffect(() => {
     loadData();
+    
+    let unsubscribe;
+    try {
+      unsubscribe = subscribeToItems(() => loadData());
+    } catch (error) {
+      console.warn('Realtime disabled:', error.message);
+    }
+    
+    const interval = setInterval(() => loadData(true), 10000);
+    
+    return () => {
+      if (unsubscribe) unsubscribe();
+      clearInterval(interval);
+    };
   }, [search, categoryFilter]);
 
   const loadData = async (isRefresh = false) => {

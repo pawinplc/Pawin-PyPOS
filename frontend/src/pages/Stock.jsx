@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { stockAPI, itemsAPI } from '../services/supabase';
+import { stockAPI, itemsAPI, subscribeToTable } from '../services/supabase';
 import { Plus, ArrowDownToLine, ArrowUpFromLine, RefreshCw, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -18,6 +18,20 @@ const Stock = ({ isAdmin = false }) => {
 
   useEffect(() => {
     loadData();
+    
+    let unsubscribe;
+    try {
+      unsubscribe = subscribeToTable('stock_movements', () => loadData());
+    } catch (error) {
+      console.warn('Realtime disabled:', error.message);
+    }
+    
+    const interval = setInterval(() => loadData(true), 10000);
+    
+    return () => {
+      if (unsubscribe) unsubscribe();
+      clearInterval(interval);
+    };
   }, []);
 
   const loadData = async (isRefresh = false) => {
