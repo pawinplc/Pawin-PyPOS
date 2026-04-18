@@ -36,7 +36,7 @@ const Login = () => {
           <div className="text-center mb-4">
             <div className="mb-3 d-inline-block">
               <img 
-                src="/logo1.png" 
+                src={`${import.meta.env.BASE_URL}logo1.png`} 
                 alt="Pawin PyPOS" 
                 style={{ width: 60, height: 60, objectFit: 'contain' }}
               />

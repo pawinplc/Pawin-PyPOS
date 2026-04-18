@@ -32,7 +32,7 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
     <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${showMobile ? 'mobile-show' : ''}`}>
       <div className="logo-area">
         <img 
-          src="/logo1.png" 
+          src={`${import.meta.env.BASE_URL}logo1.png`} 
           alt="Pawin PyPOS" 
           className="logo-img"
           style={{ width: 32, height: 32, objectFit: 'contain' }}
