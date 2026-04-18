@@ -85,86 +85,86 @@ const AdminDashboard = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-6 col-lg-3">
+      <div className="row g-2 mb-4">
+        <div className="col-6 col-md-6 col-lg-3">
           <div className="card h-100">
-            <div className="card-body">
+            <div className="card-body p-3">
               <div className="d-flex align-items-center mb-2">
                 <div className="avatar-sm bg-primary-subtle rounded p-2 me-2">
                   <i className="ti ti-box text-primary"></i>
                 </div>
                 <span className="text-muted small">Total Items</span>
               </div>
-              <div className="fs-3 fw-bold">{stats.total_items}</div>
+              <div className="fs-4 fw-bold">{stats.total_items}</div>
             </div>
           </div>
         </div>
-        <div className="col-md-6 col-lg-3">
+        <div className="col-6 col-md-6 col-lg-3">
           <div className="card h-100">
-            <div className="card-body">
+            <div className="card-body p-3">
               <div className="d-flex align-items-center mb-2">
                 <div className="avatar-sm bg-warning-subtle rounded p-2 me-2">
                   <i className="ti ti-alert-triangle text-warning"></i>
                 </div>
                 <span className="text-muted small">Low Stock</span>
               </div>
-              <div className="fs-3 fw-bold text-warning">{stats.low_stock_items}</div>
+              <div className="fs-4 fw-bold text-warning">{stats.low_stock_items}</div>
             </div>
           </div>
         </div>
-        <div className="col-md-6 col-lg-3">
+        <div className="col-6 col-md-6 col-lg-3">
           <div className="card h-100">
-            <div className="card-body">
+            <div className="card-body p-3">
               <div className="d-flex align-items-center mb-2">
                 <div className="avatar-sm bg-danger-subtle rounded p-2 me-2">
                   <i className="ti ti-x text-danger"></i>
                 </div>
                 <span className="text-muted small">Out of Stock</span>
               </div>
-              <div className="fs-3 fw-bold text-danger">{stats.out_of_stock}</div>
+              <div className="fs-4 fw-bold text-danger">{stats.out_of_stock}</div>
             </div>
           </div>
         </div>
-        <div className="col-md-6 col-lg-3">
+        <div className="col-6 col-md-6 col-lg-3">
           <div className="card h-100">
-            <div className="card-body">
+            <div className="card-body p-3">
               <div className="d-flex align-items-center mb-2">
                 <div className="avatar-sm bg-success-subtle rounded p-2 me-2">
                   <i className="ti ti-users text-success"></i>
                 </div>
                 <span className="text-muted small">Active Users</span>
               </div>
-              <div className="fs-3 fw-bold">{stats.active_users}</div>
+              <div className="fs-4 fw-bold text-success">{stats.active_users}</div>
             </div>
           </div>
         </div>
       </div>
 
       {/* Sales Stats */}
-      <div className="row g-3 mb-4">
-        <div className="col-md-4">
+      <div className="row g-2 mb-4">
+        <div className="col-6 col-md-4">
           <div className="card bg-primary text-white h-100">
-            <div className="card-body">
+            <div className="card-body p-3">
               <div className="small opacity-75">Today</div>
-              <div className="fs-4 fw-bold mb-1">TSH {stats.today_sales.toLocaleString()}</div>
+              <div className="fs-5 fw-bold mb-1">TSH {stats.today_sales.toLocaleString()}</div>
               <div className="small opacity-75">{stats.today_transactions} transactions</div>
             </div>
           </div>
         </div>
-        <div className="col-md-4">
+        <div className="col-6 col-md-4">
           <div className="card bg-info text-white h-100">
-            <div className="card-body">
+            <div className="card-body p-3">
               <div className="small opacity-75">This Week</div>
-              <div className="fs-4 fw-bold mb-1">TSH {stats.week_sales.toLocaleString()}</div>
+              <div className="fs-5 fw-bold mb-1">TSH {stats.week_sales.toLocaleString()}</div>
               <div className="small opacity-75">{stats.week_transactions} transactions</div>
             </div>
           </div>
         </div>
-        <div className="col-md-4">
+        <div className="col-12 col-md-4">
           <div className="card bg-success text-white h-100">
-            <div className="card-body">
+            <div className="card-body p-3">
               <div className="small opacity-75">This Month</div>
-              <div className="fs-4 fw-bold mb-1">TSH {stats.month_sales.toLocaleString()}</div>
+              <div className="fs-5 fw-bold mb-1">TSH {stats.month_sales.toLocaleString()}</div>
               <div className="small opacity-75">{stats.month_transactions} transactions</div>
             </div>
           </div>

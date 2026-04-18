@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { itemsAPI, salesAPI } from '../services/supabase';
+import { itemsAPI, salesAPI, subscribeToTable } from '../services/supabase';
 
 const Layout = () => {
   const { user, logout } = useAuth();
@@ -29,11 +29,18 @@ const Layout = () => {
     }
     loadNotifications();
     
+    const unsubItems = subscribeToTable('items', () => loadNotifications());
+    const unsubSales = subscribeToTable('sales', () => loadNotifications());
+    
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 992);
     };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      unsubItems();
+      unsubSales();
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   useEffect(() => {
@@ -205,14 +212,11 @@ const Layout = () => {
 
           <li className="d-flex align-items-center gap-2" ref={notifRef}>
             <button 
-              className="btn-icon btn-sm btn-light btn rounded-circle"
+              className="btn-icon btn-sm btn-light btn rounded-circle position-relative"
               onClick={() => { setNotifDropdownOpen(!notifDropdownOpen); if (!notifDropdownOpen) loadNotifications(); }}
+              style={{ width: '2rem', height: '2rem', padding: 0 }}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
-                <path d="M10 5a2 2 0 1 1 4 0a7 7 0 0 1 4 6v3a4 4 0 0 0 2 3h-16a4 4 0 0 0 2 -3v-3a7 7 0 0 1 4 -6" />
-                <path d="M9 17v1a3 3 0 0 0 6 0v-1" />
-              </svg>
+              <i className="ti ti-bell" style={{ fontSize: '18px' }}></i>
               {notifications.length > 0 && (
                 <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: '10px' }}>
                   {notifications.length}
