@@ -2,7 +2,23 @@
   "name": "pawin-pypos",
   "private": true,
   "description": "Stationery Inventory & Point of Sale System",
-  "author": "PawinPLC",
+  "author": {
+    "name": "PawinPLC",
+    "email": "support@pawinplc.com",
+    "url": "https://github.com/pawinplc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pawinplc/Pawin-PyPOS"
+  },
+  "license": "UNLICENSED",
+  "keywords": [
+    "pos",
+    "inventory",
+    "stationery",
+    "tauri",
+    "react"
+  ],
   "version": "0.1.0",
   "type": "module",
   "scripts": {
