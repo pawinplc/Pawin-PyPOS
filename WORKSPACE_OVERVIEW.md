@@ -5,12 +5,12 @@ This document provides a high-level overview of the entire Pawin PyPOS project e
 ## 📁 Repository Structure
 
 ```text
-Pawin-PyPOS/
-├── frontend/               # React + Vite Web Application
-├── Pawin-PyPOS-Desktop/    # JavaFX Desktop Application (New!)
-├── backend/                # FastAPI (Python) - Legacy/Parallel Services
-├── database/               # SQL Scripts & Supabase Configuration
-└── inapp-1.0.0/            # Supplementary Vite project
+Pawin-PyPOS-Desktop/    # JavaFX Desktop Application (Standalone)
+Pawin-PyPOS/            # Web & Backend Repository
+├── frontend/           # React + Vite Web Application
+├── backend/            # FastAPI (Python) - Legacy Service
+├── database/           # SQL Scripts
+└── inapp-1.0.0/        # Supplementary project
 ```
 
 ---
@@ -31,7 +31,7 @@ The core of the system, designed for standard browser-based operations.
 
 ---
 
-## 🖥️ Desktop Application (`/Pawin-PyPOS-Desktop`)
+## 🖥️ Desktop Application (Sibling Folder: `../Pawin-PyPOS-Desktop`)
 
 A standalone desktop version optimized for dedicated POS terminals at the University Stationery shop.
 
