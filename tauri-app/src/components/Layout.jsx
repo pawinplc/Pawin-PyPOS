@@ -2,10 +2,13 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { itemsAPI, salesAPI, subscribeToTable } from '../services/supabase';
+import { itemsAPI, salesAPI, subscribeToTable, offlineAPI } from '../services/supabase';
+import toast from 'react-hot-toast';
+import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 
 const Layout = () => {
   const { user, logout } = useAuth();
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
@@ -30,6 +33,46 @@ const Layout = () => {
     }
     loadNotifications();
     
+    // Check Notification Permissions for Tauri
+    const initNotifications = async () => {
+      if (window.__TAURI_INTERNALS__) {
+        try {
+          let granted = await isPermissionGranted();
+          if (!granted) await requestPermission();
+        } catch (e) { console.error(e); }
+      }
+    };
+    initNotifications();
+
+    const notifyDevice = async (title, body) => {
+      if (window.__TAURI_INTERNALS__) {
+        try {
+          const granted = await isPermissionGranted();
+          if (granted) await sendNotification({ title, body });
+        } catch (e) {}
+      }
+    };
+
+    const handleOnline = async () => {
+      setIsOnline(true);
+      toast.success('Connection restored. Syncing data...', { icon: '🟢', duration: 4000 });
+      notifyDevice('Pawin PyPOS', 'App is back online! Syncing offline sales...');
+      const synced = await offlineAPI.sync();
+      if (synced) {
+        toast.success('All offline sales synced successfully!');
+      }
+      loadNotifications();
+    };
+
+    const handleOffline = () => {
+      setIsOnline(false);
+      toast.error('Connection lost. Operating offline.', { icon: '🔴', duration: 4000 });
+      notifyDevice('Pawin PyPOS', 'App is offline. Using local cache.');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     const unsubItems = subscribeToTable('items', () => loadNotifications());
     const unsubSales = subscribeToTable('sales', () => loadNotifications());
     
@@ -41,6 +84,8 @@ const Layout = () => {
       unsubItems();
       unsubSales();
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -113,8 +158,20 @@ const Layout = () => {
       const allNotifs = notifs.slice(0, 5);
       setNotifications(allNotifs);
       
-      const unread = allNotifs.filter(n => !readIds.includes(n.id)).length;
-      setUnreadCount(unread);
+      const unreadNotifs = allNotifs.filter(n => !readIds.includes(n.id));
+      setUnreadCount(unreadNotifs.length);
+
+      // Trigger native device notifications for critical unread stock alerts
+      if (window.__TAURI_INTERNALS__) {
+        const sentDeviceNotifs = JSON.parse(localStorage.getItem('sentDeviceNotifs') || '[]');
+        unreadNotifs.forEach(n => {
+          if ((n.type === 'danger' || n.type === 'warning') && !sentDeviceNotifs.includes(n.id)) {
+            sendNotification({ title: n.title, body: n.message }).catch(() => {});
+            sentDeviceNotifs.push(n.id);
+          }
+        });
+        localStorage.setItem('sentDeviceNotifs', JSON.stringify(sentDeviceNotifs));
+      }
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
@@ -211,6 +268,11 @@ const Layout = () => {
                 <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
               </svg>
             </button>
+          )}
+          {!isOnline && (
+            <div className="badge bg-danger ms-2 d-flex align-items-center gap-1">
+              <i className="ti ti-wifi-off"></i> <span className="d-none d-sm-inline">Offline</span>
+            </div>
           )}
         </div>
 

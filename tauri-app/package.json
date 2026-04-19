@@ -29,6 +29,9 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.0",
+    "@tauri-apps/api": "^2",
+    "@tauri-apps/plugin-notification": "^2.3.3",
+    "@tauri-apps/plugin-opener": "^2",
     "axios": "^1.14.0",
     "bootstrap": "^5.3.8",
     "bootstrap-icons": "^1.13.1",
@@ -40,13 +43,11 @@
     "react-hot-toast": "^2.6.0",
     "react-router-dom": "^7.13.2",
     "recharts": "^2.15.4",
-    "xlsx": "^0.18.5",
-    "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-opener": "^2"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
+    "@tauri-apps/cli": "^2",
     "@vitejs/plugin-react": "^4.6.0",
-    "vite": "^8.0.1",
-    "@tauri-apps/cli": "^2"
+    "vite": "^8.0.1"
   }
 }
