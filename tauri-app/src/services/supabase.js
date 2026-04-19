@@ -277,6 +277,70 @@ export const dashboardAPI = {
       return [];
     }
     return (items || []).filter(i => i.quantity <= (i.min_stock_level || 0));
+  },
+
+  async getAdminStats() {
+    console.log('Fetching admin dashboard stats...');
+    
+    const { data: items, error: itemsError } = await supabase.from('items').select('id, quantity, min_stock_level, is_service');
+    console.log('Items:', items?.length, itemsError);
+    
+    const totalItems = items?.length || 0;
+    const lowStock = items?.filter(i => i.is_service !== true && i.quantity <= (i.min_stock_level || 0)).length || 0;
+    const outOfStock = items?.filter(i => i.is_service !== true && i.quantity <= 0).length || 0;
+    
+    const { data: allSales, error: salesError } = await supabase.from('sales').select('id, final_amount, created_at');
+    console.log('Sales:', allSales?.length, salesError);
+    
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const todayKey = today + 'T';
+    const todaySales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(todayKey));
+    const todayTotal = todaySales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
+    
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    weekStart.setHours(0, 0, 0, 0);
+    const weekStartKey = weekStart.toISOString().split('T')[0] + 'T';
+    const weekSales = (allSales || []).filter(s => s.created_at && s.created_at >= weekStartKey);
+    const weekTotal = weekSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
+    
+    const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const monthKey = thisMonth + '-';
+    const monthSales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(monthKey));
+    const monthTotal = monthSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
+    
+    const thisYear = String(now.getFullYear());
+    const yearSales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(thisYear));
+    const yearTotal = yearSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
+    
+    const { data: users } = await supabase.from('users').select('id');
+    const totalUsers = users?.length || 0;
+    
+    return {
+      total_items: totalItems,
+      low_stock_items: lowStock,
+      out_of_stock: outOfStock,
+      today_sales: todayTotal,
+      today_transactions: todaySales.length,
+      week_sales: weekTotal,
+      week_transactions: weekSales.length,
+      month_sales: monthTotal,
+      month_transactions: monthSales.length,
+      total_sales: yearTotal,
+      total_transactions: yearSales.length,
+      total_users: totalUsers,
+      active_users: totalUsers
+    };
+  },
+
+  async getUsersStats() {
+    const { data: users } = await supabase.from('users').select('id, email');
+    return {
+      total_users: users?.length || 0,
+      active_users: users?.length || 0,
+      top_items: []
+    };
   }
 };
 

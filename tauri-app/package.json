@@ -19,7 +19,7 @@
     "tauri",
     "react"
   ],
-  "version": "0.1.13",
+  "version": "0.1.15",
   "type": "module",
   "sideEffects": false,
   "scripts": {
@@ -43,12 +43,15 @@
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
     "react-router-dom": "^6.23.0",
-    "recharts": "^2.12.6",
+    "recharts": "^2.15.4",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2",
-    "@vitejs/plugin-react": "^4.3.0",
-    "vite": "^5.4.0"
+    "@vitejs/plugin-react": "^6.0.1",
+    "vite": "^8.0.1"
+  },
+  "overrides": {
+    "d3-array": "^3.2.4"
   }
 }

@@ -131,7 +131,7 @@ img {
 .sidebar {
   width: var(--sidebar-width);
   background: white;
-  transition: width 0.3s;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-right: 1px solid var(--border-color);
   height: 100vh;
   position: fixed;
@@ -140,7 +140,9 @@ img {
   z-index: 1030;
   display: flex;
   flex-direction: column;
+  overflow-x: hidden;
   overflow-y: auto;
+  white-space: nowrap;
 }
 
 .sidebar.collapsed {
@@ -241,11 +243,7 @@ img {
   text-decoration: none;
 }
 
-.sidebar.collapsed .nav-link {
-  justify-content: center;
-  padding: 8px;
-  margin: 2px 8px;
-}
+/* Collapsed nav-link rules removed so icons pin consistently to the left */
 
 .sidebar .nav-link:hover {
   color: var(--primary);
@@ -288,24 +286,50 @@ img {
   overflow: hidden;
 }
 
-.sidebar.collapsed .nav-text {
-  display: none;
+/* Supabase-style Hover Expansion */
+.sidebar.collapsed:not(:hover) .nav-text,
+.sidebar.collapsed:not(:hover) .nav-section-label,
+.sidebar.collapsed:not(:hover) .nav-section-title,
+.sidebar.collapsed:not(:hover) .logo-text,
+.sidebar.collapsed:not(:hover) .logo-icon,
+.sidebar.collapsed:not(:hover) .logout-btn span {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.1s;
 }
 
-.sidebar.collapsed .nav-section-label {
-  display: none;
+.sidebar.collapsed:hover {
+  width: var(--sidebar-width);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.08);
+  z-index: 1040;
 }
 
-.sidebar.collapsed .logo-text {
-  display: none;
+.sidebar.collapsed:hover .nav-text,
+.sidebar.collapsed:hover .nav-section-label,
+.sidebar.collapsed:hover .nav-section-title,
+.sidebar.collapsed:hover .logo-text,
+.sidebar.collapsed:hover .logo-icon,
+.sidebar.collapsed:hover .logout-btn span {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.3s 0.1s;
 }
 
-.sidebar.collapsed .logo-icon {
-  display: none;
+.sidebar.collapsed:hover .nav-link {
+  justify-content: flex-start;
+  padding: 8px 10px;
+  margin: 2px 12px;
 }
 
-.sidebar.collapsed .logout-btn span {
-  display: none;
+.sidebar.collapsed:hover .logout-btn {
+  justify-content: flex-start;
+  padding: 8px 22px;
+  margin: 2px 12px;
+  width: calc(100% - 24px);
+}
+
+.sidebar.collapsed:hover .collapse-btn {
+  margin: 0;
 }
 
 .sidebar .logout-btn {
@@ -325,12 +349,7 @@ img {
   border-radius: 8px;
 }
 
-.sidebar.collapsed .logout-btn {
-  justify-content: center;
-  padding: 8px;
-  margin: 2px 8px;
-  width: calc(100% - 16px);
-}
+/* Collapsed logout-btn rules removed to align with nav items */
 
 .sidebar .logout-btn:hover {
   color: var(--danger);
@@ -404,11 +423,7 @@ img {
   text-decoration: none;
 }
 
-.sidebar.collapsed .nav-link {
-  justify-content: center;
-  padding: 8px;
-  margin: 1px 8px;
-}
+/* Collapsed nav-link overrides removed */
 
 .sidebar .nav-link:hover {
   color: var(--primary);
@@ -430,12 +445,7 @@ img {
   overflow: hidden;
 }
 
-.sidebar.collapsed .nav-text,
-.sidebar.collapsed .nav-section-title,
-.sidebar.collapsed .logo-text,
-.sidebar.collapsed .logout-btn span {
-  display: none;
-}
+/* Hidden text rules replaced with hover layout logic above */
 
 .sidebar .logout-btn {
   display: flex;
@@ -452,10 +462,7 @@ img {
   transition: all 0.2s;
 }
 
-.sidebar.collapsed .logout-btn {
-  justify-content: center;
-  padding: 8px;
-}
+/* Collapsed logout-btn overrides removed */
 
 .sidebar .logout-btn:hover {
   color: var(--danger);
