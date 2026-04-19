@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Pawin PyPOS...</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #ffffff;
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+        }
+
+        .splash-content {
+            text-align: center;
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .logo {
+            width: 100px;
+            height: 100px;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        .title {
+            color: #E66239;
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            letter-spacing: 0.05em;
+        }
+
+        .loader {
+            margin-top: 30px;
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #E66239;
+            border-radius: 50%;
+            display: inline-block;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="splash-content">
+        <img src="logo1.png" alt="Logo" class="logo">
+        <h1 class="title">PAWIN PYPOS</h1>
+        <div class="loader"></div>
+    </div>
+</body>
+</html>

@@ -12,9 +12,21 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Pawin PyPOS",
         "width": 1280,
-        "height": 800
+        "height": 800,
+        "visible": false
+      },
+      {
+        "label": "splashscreen",
+        "url": "../splash.html",
+        "width": 400,
+        "height": 400,
+        "decorations": false,
+        "transparent": true,
+        "alwaysOnTop": true,
+        "center": true
       }
     ],
     "security": {

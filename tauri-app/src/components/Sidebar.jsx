@@ -58,6 +58,15 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
         <li className="nav-section-label px-4 pt-4 pb-2"><small className="nav-text">Account</small></li>
         <li>
           <Link
+            to="/guide"
+            className={`nav-link ${location.pathname === '/guide' ? 'active' : ''}`}
+          >
+            <i className="ti ti-help"></i>
+            <span className="nav-text">User Guide</span>
+          </Link>
+        </li>
+        <li>
+          <Link
             to="/account"
             className={`nav-link ${location.pathname === '/account' ? 'active' : ''}`}
           >
