@@ -69,7 +69,10 @@ const Layout = () => {
       const notifs = [];
       const readIds = JSON.parse(localStorage.getItem('readNotifications') || '[]');
 
-      const lowStockItems = (items || []).filter(item => item.quantity <= item.min_stock_level && item.quantity > 0);
+      // Only check stock for non-service physical items
+      const physicalItems = (items || []).filter(item => item.is_service !== true);
+
+      const lowStockItems = physicalItems.filter(item => item.quantity <= item.min_stock_level && item.quantity > 0);
       lowStockItems.slice(0, 3).forEach(item => {
         notifs.push({
           id: `low-stock-${item.id}`,
@@ -81,7 +84,7 @@ const Layout = () => {
         });
       });
 
-      const outOfStock = (items || []).filter(item => item.quantity === 0);
+      const outOfStock = physicalItems.filter(item => item.quantity === 0);
       outOfStock.slice(0, 2).forEach(item => {
         notifs.push({
           id: `out-stock-${item.id}`,

@@ -40,10 +40,11 @@ const POS = () => {
       ]);
       setCategories(cats || []);
       
-      // Regular items (not services)
-      const filteredItems = (allItems || []).filter(item => 
-        item.is_active !== false && 
-        item.is_service !== true
+      // Regular items (not services) — exclude out-of-stock
+      const filteredItems = (allItems || []).filter(item =>
+        item.is_active !== false &&
+        item.is_service !== true &&
+        item.quantity > 0
       );
       setItems(filteredItems);
       
@@ -64,9 +65,10 @@ const POS = () => {
       const params = { search };
       if (selectedCategory) params.category_id = selectedCategory;
       const data = await itemsAPI.getAll(params);
-      const filtered = (data || []).filter(item => 
-        item.is_active !== false && 
-        item.is_service !== true
+      const filtered = (data || []).filter(item =>
+        item.is_active !== false &&
+        item.is_service !== true &&
+        item.quantity > 0
       );
       setItems(filtered);
     } catch (error) {
