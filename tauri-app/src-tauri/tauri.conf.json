@@ -22,7 +22,7 @@
       },
       {
         "label": "splashscreen",
-        "url": "../splash.html",
+        "url": "/splash.html",
         "width": 400,
         "height": 400,
         "decorations": false,
