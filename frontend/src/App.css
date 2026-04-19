@@ -2840,9 +2840,28 @@ footer {
 }
 
 /* Toast dark mode */
-[data-theme="dark"] .toast {
-  background: var(--bg-white);
-  color: var(--text-primary);
+[data-theme="dark"] .hot-toast-wrapper .hot-toast {
+  background: var(--bg-white) !important;
+  color: var(--text-primary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+[data-theme="dark"] .hot-toast-success {
+  background: var(--success) !important;
+  color: #fff !important;
+}
+
+[data-theme="dark"] .hot-toast-error {
+  background: var(--danger) !important;
+  color: #fff !important;
+}
+
+[data-theme="dark"] .hot-toast-icon {
+  color: #fff !important;
+}
+
+[data-theme="dark"] .hot-toast-success .hot-toast-icon {
+  color: #fff !important;
 }
 
 /* Scrollbar dark mode */

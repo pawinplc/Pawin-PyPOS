@@ -6,16 +6,7 @@ import App from './App.jsx'
 createRoot(document.getElementById('root')).render(
   <>
     <App />
-    <Toaster 
-      position="top-right"
-      toastOptions={{
-        duration: 3000,
-        style: {
-          fontFamily: 'Poppins, sans-serif',
-          fontSize: '0.875rem',
-        },
-      }}
-    />
+    <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
   </>
 )
 

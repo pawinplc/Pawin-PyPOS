@@ -309,19 +309,17 @@ return data;
     const todaySales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(todayKey));
     const todayTotal = todaySales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
     
-    // Calculate week start (Monday)
+    // Calculate week start (Sunday)
     const weekStart = new Date(now);
-    weekStart.setDate(now.getDate() - now.getDay() + 1);
+    weekStart.setDate(now.getDate() - now.getDay());
     weekStart.setHours(0, 0, 0, 0);
-    const weekSales = (allSales || []).filter(s => {
-      if (!s.created_at) return false;
-      const saleDate = new Date(s.created_at);
-      return saleDate >= weekStart;
-    });
+    const weekStartKey = weekStart.toISOString().split('T')[0] + 'T';
+    const weekSales = (allSales || []).filter(s => s.created_at && s.created_at >= weekStartKey);
     const weekTotal = weekSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
     
     const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const monthSales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(thisMonth));
+    const monthKey = thisMonth + '-';
+    const monthSales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(monthKey));
     const monthTotal = monthSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
     
     const thisYear = String(now.getFullYear());
