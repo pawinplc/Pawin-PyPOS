@@ -3,6 +3,7 @@ import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { itemsAPI, salesAPI, subscribeToTable } from '../services/supabase';
+import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
 
 const Layout = () => {
   const { user, logout } = useAuth();
@@ -110,8 +111,33 @@ const Layout = () => {
       const allNotifs = notifs.slice(0, 5);
       setNotifications(allNotifs);
       
-      const unread = allNotifs.filter(n => !readIds.includes(n.id)).length;
-      setUnreadCount(unread);
+      const unread = allNotifs.filter(n => !readIds.includes(n.id));
+      setUnreadCount(unread.length);
+
+      // Trigger native Tauri desktop notification for any completely new alerts
+      const newToNotify = unread.filter(n => !window.notifiedIds?.has(n.id));
+      if (newToNotify.length > 0) {
+        if (!window.notifiedIds) window.notifiedIds = new Set();
+        newToNotify.forEach(n => window.notifiedIds.add(n.id));
+        
+        try {
+          let permissionGranted = await isPermissionGranted();
+          if (!permissionGranted) {
+            const permission = await requestPermission();
+            permissionGranted = permission === 'granted';
+          }
+          if (permissionGranted) {
+            newToNotify.forEach(notif => {
+              sendNotification({
+                title: notif.title,
+                body: notif.message
+              });
+            });
+          }
+        } catch (e) {
+          console.warn("Tauri notification failed or not available:", e);
+        }
+      }
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
