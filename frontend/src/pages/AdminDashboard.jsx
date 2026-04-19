@@ -19,6 +19,8 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     loadData();
+    const interval = setInterval(() => loadData(true), 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async (isRefresh = false) => {
@@ -85,7 +87,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Quick Stats */}
-      <div className="row g-2 mb-4">
+      <div className="row g-2 mb-2">
         <div className="col-6 col-md-6 col-lg-3">
           <div className="card h-100">
             <div className="card-body p-3">
@@ -135,6 +137,40 @@ const AdminDashboard = () => {
                 <span className="text-muted small">Active Users</span>
               </div>
               <div className="fs-4 fw-bold text-success">{stats.active_users}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Today's Sales & Transactions */}
+      <div className="row g-2 mb-4">
+        <div className="col-6 col-md-6">
+          <div className="card border-primary h-100">
+            <div className="card-body p-3">
+              <div className="d-flex align-items-center">
+                <div className="avatar-sm bg-primary rounded p-2 me-2">
+                  <i className="ti ti-chart-bar text-white"></i>
+                </div>
+                <div>
+                  <div className="text-muted small">Today's Sales</div>
+                  <div className="fs-4 fw-bold text-primary">TSH {stats.today_sales.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div className="col-6 col-md-6">
+          <div className="card border-warning h-100">
+            <div className="card-body p-3">
+              <div className="d-flex align-items-center">
+                <div className="avatar-sm bg-warning rounded p-2 me-2">
+                  <i className="ti ti-receipt text-white"></i>
+                </div>
+                <div>
+                  <div className="text-muted small">Transactions</div>
+                  <div className="fs-4 fw-bold text-warning">{stats.today_transactions}</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

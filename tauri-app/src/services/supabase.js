@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://dbocluzncuhhlrkeggez.supabase.co';
-const supabaseKey = 'sb_publishable_8tb4LzD6ZvfIUa04TSQSDA_FsSe7vF5';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -31,17 +31,8 @@ export const authAPI = {
 
 export const categoriesAPI = {
   async getAll() {
-    if (!navigator.onLine) {
-      return JSON.parse(localStorage.getItem('offline_categories') || '[]');
-    }
     const { data: categories, error } = await supabase.from('categories').select('*').order('name');
-    if (error) {
-      if (error.message && error.message.includes('fetch')) {
-        return JSON.parse(localStorage.getItem('offline_categories') || '[]');
-      }
-      throw error;
-    }
-    localStorage.setItem('offline_categories', JSON.stringify(categories || []));
+    if (error) throw error;
     return categories;
   },
 
@@ -65,19 +56,9 @@ export const categoriesAPI = {
 
 export const itemsAPI = {
   async getAll() {
-    if (!navigator.onLine) {
-      let cached = JSON.parse(localStorage.getItem('offline_items') || '[]');
-      return cached;
-    }
     let query = supabase.from('items').select('*, categories(name)');
     const { data: items, error } = await query;
-    if (error) {
-      if (error.message && error.message.includes('fetch')) {
-        return JSON.parse(localStorage.getItem('offline_items') || '[]');
-      }
-      throw error;
-    }
-    localStorage.setItem('offline_items', JSON.stringify(items || []));
+    if (error) throw error;
     return items;
   },
 
@@ -196,18 +177,6 @@ export const salesAPI = {
   async create(saleData, cashierId) {
     const total = saleData.items.reduce((sum, item) => sum + (item.unit_price * item.quantity), 0);
     const now = new Date().toISOString();
-
-    if (!navigator.onLine) {
-      // Offline mode: save sale to queue locally
-      const offlineId = Date.now();
-      const newSale = { id: offlineId, saleData, total_amount: total, created_at: now, offline: true };
-      const queue = JSON.parse(localStorage.getItem('offline_sales') || '[]');
-      queue.push(newSale);
-      localStorage.setItem('offline_sales', JSON.stringify(queue));
-      return { id: offlineId, ...newSale };
-    }
-
-
     const { data: sale, error: saleError } = await supabase
       .from('sales')
       .insert({
@@ -428,32 +397,6 @@ export const subscribeToSales = (callback) => {
 
 export const subscribeToItems = (callback) => {
   return subscribeToTable('items', callback);
-};
-
-export const offlineAPI = {
-  async sync() {
-    if (!navigator.onLine) return;
-    const queue = JSON.parse(localStorage.getItem('offline_sales') || '[]');
-    if (queue.length === 0) return true;
-
-    const remaining = [];
-    for (const offlineSale of queue) {
-      try {
-        await salesAPI.create(offlineSale.saleData, null);
-      } catch (err) {
-        console.error('Failed to sync offline sale:', err);
-        remaining.push(offlineSale);
-      }
-    }
-    
-    if (remaining.length === 0) {
-      localStorage.removeItem('offline_sales');
-      return true;
-    } else {
-      localStorage.setItem('offline_sales', JSON.stringify(remaining));
-      return false;
-    }
-  }
 };
 
 export const subscribeToCategories = (callback) => {

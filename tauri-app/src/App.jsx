@@ -17,7 +17,6 @@ import Users from './pages/Users';
 import Account from './pages/Account';
 import SalesDetail from './pages/SalesDetail';
 import Analytics from './pages/Analytics';
-import UserGuide from './pages/UserGuide';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -91,7 +90,6 @@ const AppRoutes = () => {
         } />
         <Route path="account" element={<Account />} />
         <Route path="analytics" element={<Analytics />} />
-        <Route path="guide" element={<UserGuide />} />
         <Route path="sales/:period" element={<SalesDetail />} />
       </Route>
     </Routes>

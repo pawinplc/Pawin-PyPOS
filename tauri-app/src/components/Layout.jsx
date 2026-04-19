@@ -2,13 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { itemsAPI, salesAPI, subscribeToTable, offlineAPI } from '../services/supabase';
-import toast from 'react-hot-toast';
-import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
+import { itemsAPI, salesAPI, subscribeToTable } from '../services/supabase';
 
 const Layout = () => {
   const { user, logout } = useAuth();
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarMobileOpen, setSidebarMobileOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth <= 992);
@@ -33,46 +30,6 @@ const Layout = () => {
     }
     loadNotifications();
     
-    // Check Notification Permissions for Tauri
-    const initNotifications = async () => {
-      if (window.__TAURI_INTERNALS__) {
-        try {
-          let granted = await isPermissionGranted();
-          if (!granted) await requestPermission();
-        } catch (e) { console.error(e); }
-      }
-    };
-    initNotifications();
-
-    const notifyDevice = async (title, body) => {
-      if (window.__TAURI_INTERNALS__) {
-        try {
-          const granted = await isPermissionGranted();
-          if (granted) await sendNotification({ title, body });
-        } catch (e) {}
-      }
-    };
-
-    const handleOnline = async () => {
-      setIsOnline(true);
-      toast.success('Connection restored. Syncing data...', { icon: '🟢', duration: 4000 });
-      notifyDevice('Pawin PyPOS', 'App is back online! Syncing offline sales...');
-      const synced = await offlineAPI.sync();
-      if (synced) {
-        toast.success('All offline sales synced successfully!');
-      }
-      loadNotifications();
-    };
-
-    const handleOffline = () => {
-      setIsOnline(false);
-      toast.error('Connection lost. Operating offline.', { icon: '🔴', duration: 4000 });
-      notifyDevice('Pawin PyPOS', 'App is offline. Using local cache.');
-    };
-
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
     const unsubItems = subscribeToTable('items', () => loadNotifications());
     const unsubSales = subscribeToTable('sales', () => loadNotifications());
     
@@ -84,8 +41,6 @@ const Layout = () => {
       unsubItems();
       unsubSales();
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
     };
   }, []);
 
@@ -114,10 +69,7 @@ const Layout = () => {
       const notifs = [];
       const readIds = JSON.parse(localStorage.getItem('readNotifications') || '[]');
 
-      // Only check stock for non-service physical items
-      const physicalItems = (items || []).filter(item => item.is_service !== true);
-
-      const lowStockItems = physicalItems.filter(item => item.quantity <= item.min_stock_level && item.quantity > 0);
+      const lowStockItems = (items || []).filter(item => item.quantity <= item.min_stock_level && item.quantity > 0);
       lowStockItems.slice(0, 3).forEach(item => {
         notifs.push({
           id: `low-stock-${item.id}`,
@@ -129,7 +81,7 @@ const Layout = () => {
         });
       });
 
-      const outOfStock = physicalItems.filter(item => item.quantity === 0);
+      const outOfStock = (items || []).filter(item => item.quantity === 0);
       outOfStock.slice(0, 2).forEach(item => {
         notifs.push({
           id: `out-stock-${item.id}`,
@@ -158,20 +110,8 @@ const Layout = () => {
       const allNotifs = notifs.slice(0, 5);
       setNotifications(allNotifs);
       
-      const unreadNotifs = allNotifs.filter(n => !readIds.includes(n.id));
-      setUnreadCount(unreadNotifs.length);
-
-      // Trigger native device notifications for critical unread stock alerts
-      if (window.__TAURI_INTERNALS__) {
-        const sentDeviceNotifs = JSON.parse(localStorage.getItem('sentDeviceNotifs') || '[]');
-        unreadNotifs.forEach(n => {
-          if ((n.type === 'danger' || n.type === 'warning') && !sentDeviceNotifs.includes(n.id)) {
-            sendNotification({ title: n.title, body: n.message }).catch(() => {});
-            sentDeviceNotifs.push(n.id);
-          }
-        });
-        localStorage.setItem('sentDeviceNotifs', JSON.stringify(sentDeviceNotifs));
-      }
+      const unread = allNotifs.filter(n => !readIds.includes(n.id)).length;
+      setUnreadCount(unread);
     } catch (error) {
       console.error('Failed to load notifications:', error);
     } finally {
@@ -254,25 +194,25 @@ const Layout = () => {
         onClick={closeMobileMenu}
       ></div>
       
-      <Sidebar
-        alertCount={unreadCount}
+      <Sidebar 
+        collapsed={sidebarCollapsed} 
+        onToggle={toggleSidebar}
         isMobile={isMobile}
         mobileOpen={isMobile && sidebarMobileOpen}
       />
 
-      <nav className="topbar">
+      <nav className={`topbar ${isMobile ? '' : (sidebarCollapsed ? 'full' : '')}`}>
         <div className="d-flex align-items-center gap-2">
-          {isMobile && (
+          {isMobile ? (
             <button className="toggle-btn" onClick={toggleMobileMenu} title="Menu">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
               </svg>
             </button>
-          )}
-          {!isOnline && (
-            <div className="badge bg-danger ms-2 d-flex align-items-center gap-1">
-              <i className="ti ti-wifi-off"></i> <span className="d-none d-sm-inline">Offline</span>
-            </div>
+          ) : (
+            <button className="toggle-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}>
+              <i className={`ti ${sidebarCollapsed ? 'ti-layout-sidebar-right-expand' : 'ti-layout-sidebar-left-expand'}`}></i>
+            </button>
           )}
         </div>
 
@@ -431,7 +371,7 @@ const Layout = () => {
         </ul>
       </nav>
 
-      <main className="content">
+      <main className={`content ${sidebarCollapsed ? 'full' : ''}`}>
         <div className="container-fluid">
           <Outlet />
         </div>
