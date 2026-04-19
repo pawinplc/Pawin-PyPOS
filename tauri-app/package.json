@@ -1,6 +1,8 @@
 {
-  "name": "tauri-app",
+  "name": "pawin-pypos",
   "private": true,
+  "description": "Stationery Inventory & Point of Sale System",
+  "author": "PawinPLC",
   "version": "0.1.0",
   "type": "module",
   "scripts": {

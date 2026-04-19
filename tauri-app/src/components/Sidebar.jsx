@@ -72,6 +72,15 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
           </button>
         </li>
       </nav>
+      
+      <div className="sidebar-footer px-4 py-3 mt-auto border-top" style={{ borderColor: 'var(--border-color-light)' }}>
+        <p className="mb-0 text-muted" style={{ fontSize: '10px', letterSpacing: '0.05em' }}>
+          VERSION 0.1.0-BETA
+        </p>
+        <p className="mb-0 text-muted" style={{ fontSize: '9px' }}>
+          &copy; 2026 PawinPLC
+        </p>
+      </div>
     </aside>
   );
 };
