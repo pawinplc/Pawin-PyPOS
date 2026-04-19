@@ -194,24 +194,19 @@ const Layout = () => {
         onClick={closeMobileMenu}
       ></div>
       
-      <Sidebar 
-        collapsed={sidebarCollapsed} 
-        onToggle={toggleSidebar}
+      <Sidebar
+        alertCount={unreadCount}
         isMobile={isMobile}
         mobileOpen={isMobile && sidebarMobileOpen}
       />
 
-      <nav className={`topbar ${isMobile ? '' : (sidebarCollapsed ? 'full' : '')}`}>
+      <nav className="topbar">
         <div className="d-flex align-items-center gap-2">
-          {isMobile ? (
+          {isMobile && (
             <button className="toggle-btn" onClick={toggleMobileMenu} title="Menu">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
               </svg>
-            </button>
-          ) : (
-            <button className="toggle-btn" onClick={toggleSidebar} title={sidebarCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}>
-              <i className={`ti ${sidebarCollapsed ? 'ti-layout-sidebar-right-expand' : 'ti-layout-sidebar-left-expand'}`}></i>
             </button>
           )}
         </div>
@@ -371,7 +366,7 @@ const Layout = () => {
         </ul>
       </nav>
 
-      <main className={`content ${sidebarCollapsed ? 'full' : ''}`}>
+      <main className="content">
         <div className="container-fluid">
           <Outlet />
         </div>
