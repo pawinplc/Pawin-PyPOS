@@ -6,14 +6,11 @@ use std::time::Duration;
 /// Shows the main window and closes the splash screen.
 #[tauri::command]
 async fn close_splashscreen(app: tauri::AppHandle) {
-    let splash: Option<WebviewWindow> = app.get_webview_window("splashscreen");
-    let main: Option<WebviewWindow> = app.get_webview_window("main");
-
-    if let Some(w) = splash {
-        w.close().unwrap_or(());
+    if let Some(splash) = app.get_webview_window("splashscreen") {
+        let _ = splash.close();
     }
-    if let Some(w) = main {
-        w.show().unwrap_or(());
+    if let Some(main) = app.get_webview_window("main") {
+        let _ = main.show();
     }
 }
 
@@ -23,15 +20,22 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .setup(|app| {
-            let splash_clone = app.get_webview_window("splashscreen");
-            let main_clone = app.get_webview_window("main");
+            let splash = app.get_webview_window("splashscreen");
+            let main = app.get_webview_window("main");
+            
+            if let Some(w) = splash {
+                println!("Splash window found");
+            }
+            if let Some(w) = main {
+                println!("Main window found");
+            }
             
             thread::spawn(move || {
-                thread::sleep(Duration::from_millis(1800));
-                if let Some(w) = splash_clone {
+                thread::sleep(Duration::from_millis(2000));
+                if let Some(w) = splash {
                     let _ = w.close();
                 }
-                if let Some(w) = main_clone {
+                if let Some(w) = main {
                     let _ = w.show();
                 }
             });
