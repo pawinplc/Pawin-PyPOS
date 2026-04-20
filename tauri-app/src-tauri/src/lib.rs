@@ -1,4 +1,4 @@
-use tauri::{Manager, WebviewWindow};
+use tauri::Manager;
 use std::thread;
 use std::time::Duration;
 
@@ -23,10 +23,10 @@ pub fn run() {
             let splash = app.get_webview_window("splashscreen");
             let main = app.get_webview_window("main");
             
-            if let Some(w) = splash {
+            if splash.is_some() {
                 println!("Splash window found");
             }
-            if let Some(w) = main {
+            if main.is_some() {
                 println!("Main window found");
             }
             
