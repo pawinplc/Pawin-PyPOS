@@ -5,7 +5,7 @@
 
 ---
 
-## Table of Contents
+## Table of Contents, Contents
 
 - [Prerequisites](#prerequisites)
 - [Running Locally (Dev Mode)](#running-locally-dev-mode)
