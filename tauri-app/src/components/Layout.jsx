@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import TitleBar from './TitleBar';
 import { useAuth } from '../context/AuthContext';
 import { itemsAPI, salesAPI, subscribeToTable } from '../services/supabase';
 import { isPermissionGranted, requestPermission, sendNotification } from '@tauri-apps/plugin-notification';
@@ -214,6 +215,7 @@ const Layout = () => {
 
   return (
     <div className="app-layout">
+      <TitleBar />
       <div 
         id="overlay" 
         className={`overlay ${sidebarMobileOpen ? 'show' : ''}`} 

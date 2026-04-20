@@ -19,7 +19,7 @@
     "tauri",
     "react"
   ],
-  "version": "0.1.17",
+  "version": "0.1.20",
   "type": "module",
   "sideEffects": false,
   "scripts": {
