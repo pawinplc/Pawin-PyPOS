@@ -278,7 +278,7 @@ const Categories = ({ isAdmin = false }) => {
               <i className="ti ti-download me-1"></i>
               Export
             </button>
-            {!isAdmin && (
+            {isAdmin && (
               <button className="btn btn-primary" onClick={() => openModal()}>
                 <i className="ti ti-plus"></i>
                 Add Category

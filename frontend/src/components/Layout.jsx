@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { itemsAPI, salesAPI, subscribeToTable } from '../services/supabase';
+import { itemsAPI, salesAPI, notificationsAPI, subscribeToTable, subscribeToNotifications } from '../services/supabase';
 
 const Layout = () => {
   const { user, logout } = useAuth();
@@ -33,6 +33,14 @@ const Layout = () => {
     const unsubItems = subscribeToTable('items', () => loadNotifications());
     const unsubSales = subscribeToTable('sales', () => loadNotifications());
     
+    // Subscribe to admin notifications
+    let unsubNotifs = () => {};
+    if (user?.id) {
+      unsubNotifs = subscribeToNotifications(user.id, () => {
+        loadNotifications();
+      });
+    }
+    
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 992);
     };
@@ -40,9 +48,10 @@ const Layout = () => {
     return () => {
       unsubItems();
       unsubSales();
+      unsubNotifs();
       window.removeEventListener('resize', handleResize);
     };
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -61,14 +70,30 @@ const Layout = () => {
   const loadNotifications = async () => {
     try {
       setNotifLoading(true);
-      const [items, sales] = await Promise.all([
+      const [items, sales, userNotifs] = await Promise.all([
         itemsAPI.getAll({}),
-        salesAPI.getAll()
+        salesAPI.getAll(),
+        user?.id ? notificationsAPI.getAll(user.id) : Promise.resolve([])
       ]);
 
       const notifs = [];
       const readIds = JSON.parse(localStorage.getItem('readNotifications') || '[]');
 
+      // 1. Add Admin/Chat Notifications
+      (userNotifs || []).forEach(n => {
+        notifs.push({
+          id: `db-${n.id}`,
+          dbId: n.id,
+          type: n.type || 'info',
+          icon: n.type === 'chat' ? 'ti-message' : 'ti-notification',
+          title: n.title,
+          message: n.message,
+          time: n.created_at,
+          isRead: n.is_read
+        });
+      });
+
+      // 2. Add System Notifications (Low Stock, etc.)
       const lowStockItems = (items || []).filter(item => item.quantity <= item.min_stock_level && item.quantity > 0);
       lowStockItems.slice(0, 3).forEach(item => {
         notifs.push({
@@ -119,10 +144,18 @@ const Layout = () => {
     }
   };
 
-  const markAllRead = () => {
+  const markAllRead = async () => {
     const readIds = notifications.map(n => n.id);
     localStorage.setItem('readNotifications', JSON.stringify(readIds));
     setUnreadCount(0);
+    
+    if (user?.id) {
+      try {
+        await notificationsAPI.markAllAsRead(user.id);
+      } catch (error) {
+        console.error('Failed to sync read status:', error);
+      }
+    }
   };
 
   const toggleSidebar = () => {

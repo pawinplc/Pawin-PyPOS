@@ -16,7 +16,10 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
     { path: '/stock', icon: 'ti-archive', label: 'Stock', adminOnly: true, adminViewOnly: true, alertPath: '/stock' },
     { path: '/sales', icon: 'ti-receipt', label: 'Sales' },
     { path: '/reports', icon: 'ti-chart-bar', label: 'Reports', adminOnly: true, adminExportOnly: true },
-    ...(isAdmin() ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
+    ...(isAdmin() ? [
+      { path: '/users', icon: 'ti-users', label: 'Users' },
+      { path: '/messages', icon: 'ti-message', label: 'Messages' }
+    ] : []),
   ];
 
   const filteredMenu = menuItems.filter(item => !item.adminOnly || isAdmin());

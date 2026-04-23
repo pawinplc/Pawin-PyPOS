@@ -4,6 +4,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Layout from './components/Layout';
 import Login from './pages/Login';
+import Landing from './pages/Landing';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import POS from './pages/POS';
@@ -17,6 +18,7 @@ import Users from './pages/Users';
 import Account from './pages/Account';
 import SalesDetail from './pages/SalesDetail';
 import Analytics from './pages/Analytics';
+import AdminMessages from './pages/AdminMessages';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -59,9 +61,10 @@ const AppRoutes = () => {
 
   return (
     <Routes>
-      <Route path="/login" element={user ? <Navigate to="/" replace /> : <Login />} />
+      <Route path="/" element={<Landing />} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
       
-      <Route path="/" element={
+      <Route path="/dashboard" element={
         <ProtectedRoute>
           <Layout />
         </ProtectedRoute>
@@ -87,6 +90,9 @@ const AppRoutes = () => {
         } />
         <Route path="users" element={
           <AdminRoute><Users /></AdminRoute>
+        } />
+        <Route path="messages" element={
+          <AdminRoute><AdminMessages /></AdminRoute>
         } />
         <Route path="account" element={<Account />} />
         <Route path="analytics" element={<Analytics />} />
