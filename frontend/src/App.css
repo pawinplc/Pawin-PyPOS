@@ -2524,12 +2524,24 @@ footer {
   border-color: var(--border-color) !important;
 }
 
-/* Hide all buttons with dropdown caret in dark mode - be very specific */
-button[class*="btn"]:not(:empty)::after,
-[data-theme="dark"] .btn-secondary:not(:empty)::after,
-[data-theme="dark"] .btn-outline-secondary:not(:empty)::after {
+/* Hide unwanted dropdown arrow/caret on all buttons in dark mode - CRITICAL */
+[data-theme="dark"] .btn::after {
+  content: '' !important;
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+[data-theme="dark"] button.btn::after {
   display: none !important;
 }
+
+/* Theme toggle button should work */
+[data-theme="dark"] .theme-toggle::after {
+  display: block !important;
+  content: '' !important;
+}
+
 [data-theme="dark"] .card {
   background: var(--bg-white);
   border-color: var(--border-color);
