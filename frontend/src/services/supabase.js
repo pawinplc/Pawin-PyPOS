@@ -55,24 +55,11 @@ export const categoriesAPI = {
 };
 
 export const itemsAPI = {
-  async getAll(params = {}) {
+  async getAll() {
     let query = supabase.from('items').select('*, categories(name)');
-    
-    if (params.search) {
-      query = query.or(`name.ilike.%${params.search}%,sku.ilike.%${params.search}%,barcode.ilike.%${params.search}%`);
-    }
-    
-    if (params.category_id) {
-      query = query.eq('category_id', params.category_id);
-    }
-    
-    const { data: items, error } = await query.order('name');
+    const { data: items, error } = await query;
     if (error) throw error;
-    return (items || []).map(item => ({
-      ...item,
-      category_name: item.categories?.name,
-      is_low_stock: item.is_service ? false : item.quantity <= (item.min_stock_level || 0)
-    }));
+    return items;
   },
 
   async getByCategory(categoryId) {
@@ -424,39 +411,6 @@ return data;
 }
 };
 
-export const notificationsAPI = {
-  async getAll(userId) {
-    let query = supabase.from('notifications').select('*, sender:sender_id(full_name, username)');
-    if (userId) {
-      query = query.eq('user_id', userId);
-    }
-    const { data, error } = await query.order('created_at', { ascending: false });
-    if (error) throw error;
-    return data;
-  },
-
-  async send(notification) {
-    const { data, error } = await supabase.from('notifications').insert(notification).select().single();
-    if (error) throw error;
-    return data;
-  },
-
-  async markAsRead(id) {
-    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('id', id);
-    if (error) throw error;
-  },
-
-  async markAllAsRead(userId) {
-    const { error } = await supabase.from('notifications').update({ is_read: true }).eq('user_id', userId).eq('is_read', false);
-    if (error) throw error;
-  },
-
-  async delete(id) {
-    const { error } = await supabase.from('notifications').delete().eq('id', id);
-    if (error) throw error;
-  }
-};
-
 export const analyticsAPI = {
   async getSalesByCategory() {
     const { data: saleItems } = await supabase
@@ -511,31 +465,6 @@ export const subscribeToItems = (callback) => {
 
 export const subscribeToCategories = (callback) => {
   return subscribeToTable('categories', callback);
-};
-
-export const subscribeToNotifications = (userId, callback) => {
-  try {
-    const subscription = supabase
-      .channel('public:notifications:user:' + userId)
-      .on('postgres_changes', { 
-        event: 'INSERT', 
-        schema: 'public', 
-        table: 'notifications',
-        filter: `user_id=eq.${userId}` 
-      }, (payload) => {
-        callback(payload);
-      })
-      .subscribe();
-
-    return () => supabase.removeChannel(subscription);
-  } catch (error) {
-    console.warn('Realtime notifications error:', error.message);
-    return () => {};
-  }
-};
-
-export const subscribeToAllNotifications = (callback) => {
-  return subscribeToTable('notifications', callback);
 };
 
 export { supabase as default };

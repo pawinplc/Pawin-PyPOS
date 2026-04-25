@@ -12,33 +12,14 @@ export const AuthProvider = ({ children }) => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          // Fetch additional user data from public.users table
-          const { data: dbUser, error: dbError } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
-          if (dbError) {
-            console.warn('Could not fetch user record, using fallback:', dbError);
-            setUser({
-              id: session.user.id,
-              email: session.user.email,
-              username: session.user.email?.split('@')[0],
-              role: 'staff', // Fallback role
-              full_name: session.user.user_metadata?.full_name || session.user.email,
-              avatar_url: session.user.user_metadata?.avatar_url || null
-            });
-          } else {
-            setUser({
-              id: session.user.id,
-              email: session.user.email,
-              username: dbUser.username,
-              role: dbUser.role || 'staff',
-              full_name: dbUser.full_name || session.user.user_metadata?.full_name || session.user.email,
-              avatar_url: session.user.user_metadata?.avatar_url || null
-            });
-          }
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            username: session.user.email?.split('@')[0],
+            role: 'admin',
+            full_name: session.user.user_metadata?.full_name || session.user.email,
+            avatar_url: session.user.user_metadata?.avatar_url || null
+          });
         }
       } catch (error) {
         console.error('Auth init error:', error);
@@ -50,21 +31,14 @@ export const AuthProvider = ({ children }) => {
     initAuth();
 
     try {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
         if (session?.user) {
-          // Fetch additional user data
-          const { data: dbUser } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-
           setUser({
             id: session.user.id,
             email: session.user.email,
-            username: dbUser?.username || session.user.email?.split('@')[0],
-            role: dbUser?.role || 'staff',
-            full_name: dbUser?.full_name || session.user.user_metadata?.full_name || session.user.email,
+            username: session.user.email?.split('@')[0],
+            role: 'admin',
+            full_name: session.user.user_metadata?.full_name || session.user.email,
             avatar_url: session.user.user_metadata?.avatar_url || null
           });
         } else {
@@ -88,18 +62,12 @@ export const AuthProvider = ({ children }) => {
       });
       if (error) throw error;
       
-      const { data: dbUser } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', data.user.id)
-        .single();
-
       const userData = {
         id: data.user.id,
         email: data.user.email,
-        username: dbUser?.username || data.user.email?.split('@')[0],
-        role: dbUser?.role || 'staff',
-        full_name: dbUser?.full_name || data.user.user_metadata?.full_name || data.user.email,
+        username: data.user.email?.split('@')[0],
+        role: 'admin',
+        full_name: data.user.user_metadata?.full_name || data.user.email,
         avatar_url: data.user.user_metadata?.avatar_url || null
       };
       setUser(userData);

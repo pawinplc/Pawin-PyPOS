@@ -32,7 +32,7 @@ const Landing = () => {
             <header className="landing-header">
                 <div className="landing-logo-pro">
                     <div className="logo-ring">
-                        <img src="/icons/128x128.png" alt="Pawin Logo" />
+                        <img src="/logo1.png" alt="Pawin Logo" />
                     </div>
                     <div className="logo-text">
                         <span className="brand">Pawin</span>
@@ -49,7 +49,7 @@ const Landing = () => {
             </header>
 
             <main className="hero-section">
-                <div className="hero-content">
+                <div className="hero-content fade-in-up">
                     <span className="hero-badge">Modern Point of Sale System</span>
                     <h1>Empower Your Stationery Business with <span>Pawin PyPOS</span></h1>
                     <p>
@@ -73,13 +73,52 @@ const Landing = () => {
                             <span className="dot"></span>
                             <span className="dot"></span>
                         </div>
-                        <div className="mock-content">
-                            <div className="mock-stat-grid">
-                                <div className="mock-stat"></div>
-                                <div className="mock-stat"></div>
-                                <div className="mock-stat"></div>
+                        <div className="mock-content mobile-app-mock">
+                            <div className="mobile-header">
+                                <div className="status-bar">
+                                    <span>9:41</span>
+                                    <div className="status-icons">
+                                        <i className="ti ti-wifi"></i>
+                                        <i className="ti ti-battery-4"></i>
+                                    </div>
+                                </div>
+                                <div className="app-bar">
+                                    <i className="ti ti-menu-2"></i>
+                                    <span className="app-title">Dashboard</span>
+                                    <i className="ti ti-bell"></i>
+                                </div>
                             </div>
-                            <div className="mock-chart"></div>
+                            <div className="mobile-body">
+                                <div className="mock-card-sm">
+                                    <div className="line-long"></div>
+                                    <div className="line-short"></div>
+                                </div>
+                                <div className="mock-list">
+                                    <div className="mock-item">
+                                        <div className="circle"></div>
+                                        <div className="lines">
+                                            <div className="l1"></div>
+                                            <div className="l2"></div>
+                                        </div>
+                                    </div>
+                                    <div className="mock-item">
+                                        <div className="circle"></div>
+                                        <div className="lines">
+                                            <div className="l1"></div>
+                                            <div className="l2"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="mobile-nav">
+                                <i className="ti ti-home"></i>
+                                <i className="ti ti-shopping-cart"></i>
+                                <div className="fab">
+                                    <i className="ti ti-plus"></i>
+                                </div>
+                                <i className="ti ti-box"></i>
+                                <i className="ti ti-user"></i>
+                            </div>
                         </div>
                     </div>
                     <div className="floating-badge badge-1">
@@ -110,7 +149,7 @@ const Landing = () => {
             </section>
 
             <footer className="landing-footer">
-                <p>&copy; 2024 Pawin PLC. All rights reserved.</p>
+                <p>&copy; 2026 Pawin PLC. All rights reserved.</p>
             </footer>
         </div>
     );

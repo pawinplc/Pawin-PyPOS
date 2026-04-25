@@ -113,7 +113,7 @@ const Landing = () => {
             </section>
 
             <footer className="landing-footer">
-                <p>&copy; 2024 Pawin PLC. All rights reserved.</p>
+                <p>&copy; 2026 Pawin PLC. All rights reserved.</p>
             </footer>
         </div>
         </>

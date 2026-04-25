@@ -18,7 +18,6 @@ import Users from './pages/Users';
 import Account from './pages/Account';
 import SalesDetail from './pages/SalesDetail';
 import Analytics from './pages/Analytics';
-import AdminMessages from './pages/AdminMessages';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -90,9 +89,6 @@ const AppRoutes = () => {
         } />
         <Route path="users" element={
           <AdminRoute><Users /></AdminRoute>
-        } />
-        <Route path="messages" element={
-          <AdminRoute><AdminMessages /></AdminRoute>
         } />
         <Route path="account" element={<Account />} />
         <Route path="analytics" element={<Analytics />} />
