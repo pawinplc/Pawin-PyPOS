@@ -55,7 +55,8 @@ const Login = () => {
             onClick={toggleTheme} 
             className="theme-toggle-btn" 
             style={{ position: 'absolute', top: '15px', right: '15px', width: '32px', height: '32px', fontSize: '1rem' }}
-           title="Toggle Theme">
+            title="Toggle Theme"
+          >
             <i className={`ti ${darkMode ? 'ti-sun' : 'ti-moon'}`}></i>
           </button>
           <div className="card-body p-5">
@@ -67,48 +68,49 @@ const Login = () => {
                   style={{ width: 60, height: 60, objectFit: 'contain' }}
                 />
               </div>
-            <h1 className="card-title mb-1" style={{ color: 'var(--text-primary)' }}>Pawin PyPOS</h1>
-            <p className="text-muted small">Sign in to your account</p>
-          </div>
-
-          <form onSubmit={handleSubmit}>
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label">Email address</label>
-              <input
-                id="email"
-                type="email"
-                className="form-control"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoFocus
-              />
+              <h1 className="card-title mb-1" style={{ color: 'var(--text-primary)' }}>Pawin PyPOS</h1>
+              <p className="text-muted small">Sign in to your account</p>
             </div>
 
-            <div className="mb-3">
-              <label htmlFor="password" style={{ color: 'var(--text-primary)' }} className="form-label">Password</label>
-              <input
-                id="password"
-                type="password"
-                className="form-control"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                minLength={6}
-              />
-            </div>
+            <form onSubmit={handleSubmit}>
+              <div className="mb-3">
+                <label htmlFor="email" className="form-label">Email address</label>
+                <input
+                  id="email"
+                  type="email"
+                  className="form-control"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                />
+              </div>
 
-            <div className="d-grid gap-2 mb-4">
-              <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
-                {loading ? 'Signing in...' : 'Sign in'}
-              </button>
-            </div>
-          </form>
+              <div className="mb-3">
+                <label htmlFor="password" style={{ color: 'var(--text-primary)' }} className="form-label">Password</label>
+                <input
+                  id="password"
+                  type="password"
+                  className="form-control"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                />
+              </div>
 
-          <div className="text-center">
-            <Link to="/" className="text-muted small text-decoration-none hover-primary">
-              <i className="ti ti-arrow-left me-1"></i> Back to Home
-            </Link>
+              <div className="d-grid gap-2 mb-4">
+                <button type="submit" className="btn btn-primary btn-lg" disabled={loading}>
+                  {loading ? 'Signing in...' : 'Sign in'}
+                </button>
+              </div>
+            </form>
+
+            <div className="text-center">
+              <Link to="/" className="text-muted small text-decoration-none hover-primary">
+                <i className="ti ti-arrow-left me-1"></i> Back to Home
+              </Link>
+            </div>
           </div>
         </div>
       </div>
