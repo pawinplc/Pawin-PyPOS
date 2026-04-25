@@ -8,7 +8,7 @@ import toast from 'react-hot-toast';
 
 const Reports = ({ isAdmin: propIsAdmin }) => {
   const { isAdmin: authIsAdmin } = useAuth();
-  const isAdmin = propIsAdmin ?? authIsAdmin;
+  const isAdmin = propIsAdmin ?? authIsAdmin();
   const [reportData, setReportData] = useState({
     dailySales: [],
     monthlySales: [],
