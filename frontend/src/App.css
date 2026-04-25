@@ -2524,18 +2524,11 @@ footer {
   border-color: var(--border-color) !important;
 }
 
-/* Hide ALL dropdown carets/arrows in dark mode - aggressive */
-html[data-theme="dark"] .btn::after,
-html[data-theme="dark"] .dropdown-toggle::after,
-html[data-theme="dark"] .btn-group > .btn::after,
-html[data-theme="dark"] [data-bs-toggle="dropdown"]::after,
-html[data-theme="dark"] .caret::after {
+/* Hide all buttons with dropdown caret in dark mode - be very specific */
+button[class*="btn"]:not(:empty)::after,
+[data-theme="dark"] .btn-secondary:not(:empty)::after,
+[data-theme="dark"] .btn-outline-secondary:not(:empty)::after {
   display: none !important;
-  opacity: 0 !important;
-  width: 0 !important;
-  height: 0 !important;
-  border: none !important;
-  background: transparent !important;
 }
 [data-theme="dark"] .card {
   background: var(--bg-white);
