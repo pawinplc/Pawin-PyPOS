@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import supabase from '../services/supabase';
-import { Plus, X } from 'lucide-react';
+import { usersAPI } from '../services/supabase';
 import toast from 'react-hot-toast';
 
 const Users = () => {
@@ -13,18 +12,16 @@ const Users = () => {
 
   useEffect(() => {
     loadUsers();
-    
     const interval = setInterval(() => loadUsers(), 10000);
-    
     return () => clearInterval(interval);
   }, []);
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase.auth.admin.listUsers();
-      if (error) throw error;
-      setUsers(data.users || []);
+      const data = await usersAPI.getAll();
+      setUsers(data || []);
     } catch (error) {
+      console.error('Failed to load users:', error);
       toast.error('Failed to load users');
     } finally {
       setLoading(false);
@@ -43,25 +40,7 @@ const Users = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
-      toast.error('Email and password are required');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        user_metadata: { full_name: formData.full_name, role: formData.role }
-      });
-
-      if (error) throw error;
-      toast.success('User created successfully');
-      closeModal();
-      loadUsers();
-    } catch (error) {
-      toast.error(error.message || 'Failed to create user');
-    }
+    toast.error('User creation is restricted to the Cloud Dashboard for security.');
   };
 
   const getInitials = (name) => {
@@ -74,37 +53,14 @@ const Users = () => {
       <div className="row">
         <div className="col-12">
           <div className="d-flex justify-content-between align-items-center mb-4">
-            <div>
-              <div className="skeleton" style={{ width: 150, height: 28, marginBottom: 8 }}></div>
-              <div className="skeleton" style={{ width: 200, height: 18 }}></div>
-            </div>
-            <div className="skeleton" style={{ width: 100, height: 36, borderRadius: 4 }}></div>
+            <div className="skeleton" style={{ width: 250, height: 40 }}></div>
           </div>
         </div>
         <div className="col-12">
           <div className="card">
-            <div className="table-responsive">
-              <table className="table mb-0">
-                <thead className="table-light">
-                  <tr>
-                    <th><div className="skeleton" style={{ width: 60, height: 14 }}></div></th>
-                    <th><div className="skeleton" style={{ width: 150, height: 14 }}></div></th>
-                    <th><div className="skeleton" style={{ width: 120, height: 14 }}></div></th>
-                    <th><div className="skeleton" style={{ width: 80, height: 14 }}></div></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...Array(6)].map((_, i) => (
-                    <tr key={i}>
-                      <td><div className="skeleton" style={{ width: 40, height: 40, borderRadius: 20 }}></div></td>
-                      <td><div className="skeleton" style={{ width: 150, height: 16 }}></div></td>
-                      <td><div className="skeleton" style={{ width: 100, height: 16 }}></div></td>
-                      <td><div className="skeleton" style={{ width: 60, height: 16 }}></div></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="p-3 border-bottom skeleton" style={{ height: 60 }}></div>
+            ))}
           </div>
         </div>
       </div>
@@ -117,7 +73,7 @@ const Users = () => {
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
             <h1 className="fs-3 mb-1">User Management</h1>
-            <p className="text-muted mb-0">Manage system users and roles</p>
+            <p className="text-muted mb-0">View system users and their assigned roles</p>
           </div>
           <div>
             <button className="btn btn-primary" onClick={openModal}>
@@ -147,25 +103,21 @@ const Users = () => {
                     <td>
                       <div className="d-flex align-items-center gap-3">
                         <div className="avatar avatar-sm avatar-primary">
-                          <span className="avatar-initials">{getInitials(user.user_metadata?.full_name)}</span>
+                          <span className="avatar-initials">{getInitials(user.full_name)}</span>
                         </div>
-                        <span className="fw-medium">{user.user_metadata?.full_name || '-'}</span>
+                        <span className="fw-medium">{user.full_name || '-'}</span>
                       </div>
                     </td>
                     <td>{user.email}</td>
                     <td>
-                      {user.user_metadata?.role === 'admin' ? (
+                      {user.role === 'admin' ? (
                         <span className="badge bg-danger-subtle text-danger border border-danger">Admin</span>
                       ) : (
                         <span className="badge bg-info-subtle text-info border border-info">Staff</span>
                       )}
                     </td>
                     <td>
-                      {user.confirmed_at ? (
-                        <span className="badge bg-success-subtle text-success border border-success">Active</span>
-                      ) : (
-                        <span className="badge bg-warning-subtle text-warning border border-warning">Pending</span>
-                      )}
+                      <span className="badge bg-success-subtle text-success border border-success">Active</span>
                     </td>
                     <td className="small">{new Date(user.created_at).toLocaleDateString()}</td>
                   </tr>
@@ -173,9 +125,9 @@ const Users = () => {
               </tbody>
             </table>
             {users.length === 0 && (
-              <div className="empty-state py-5">
+              <div className="empty-state py-5 text-center">
                 <i className="ti ti-users fs-1 text-muted"></i>
-                <p className="mt-2">No users found</p>
+                <p className="mt-2 text-muted">No system users found</p>
               </div>
             )}
           </div>
@@ -191,59 +143,16 @@ const Users = () => {
                 <i className="ti ti-x"></i>
               </button>
             </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label">Email *</label>
-                  <input
-                    type="email"
-                    className="form-control"
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    required
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Full Name</label>
-                  <input
-                    type="text"
-                    className="form-control"
-                    value={formData.full_name}
-                    onChange={(e) => setFormData({...formData, full_name: e.target.value})}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Role *</label>
-                  <select
-                    className="form-select"
-                    value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                  >
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </div>
-                <div className="form-group mb-0">
-                  <label className="form-label">Password *</label>
-                  <input
-                    type="password"
-                    className="form-control"
-                    value={formData.password}
-                    onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    required
-                    minLength={6}
-                  />
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" onClick={closeModal} className="btn btn-outline-secondary">
-                  Cancel
-                </button>
-                <button type="submit" className="btn btn-primary">
-                  Create User
-                </button>
-              </div>
-            </form>
+            <div className="modal-body p-4 text-center">
+              <i className="ti ti-shield-lock text-warning fs-1 mb-3"></i>
+              <p>For security reasons, system users must be registered via the <strong>Cloud Management Console</strong>.</p>
+              <p className="small text-muted">Direct user creation from the desktop app is currently disabled.</p>
+            </div>
+            <div className="modal-footer">
+              <button type="button" onClick={closeModal} className="btn btn-primary w-100">
+                Understood
+              </button>
+            </div>
           </div>
         </div>
       )}

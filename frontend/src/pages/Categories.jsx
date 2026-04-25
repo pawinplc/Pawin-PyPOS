@@ -18,6 +18,8 @@ const Categories = ({ isAdmin = false }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
 
+  const [showHelp, setShowHelp] = useState(false);
+
   useEffect(() => {
     loadCategories();
     
@@ -259,6 +261,10 @@ const Categories = ({ isAdmin = false }) => {
               <i className={`ti ti-refresh ${refreshing ? 'fa-spin' : ''}`}></i>
               {refreshing ? ' Refreshing...' : ' Refresh'}
             </button>
+            <button className="btn btn-outline-secondary" onClick={() => setShowHelp(!showHelp)}>
+              <i className="ti ti-help-circle me-1"></i>
+              Help
+            </button>
             <button className="btn btn-outline-secondary" onClick={() => fileInputRef.current?.click()}>
               <i className="ti ti-upload me-1"></i>
               Import CSV/XLS
@@ -453,6 +459,32 @@ const Categories = ({ isAdmin = false }) => {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {showHelp && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+            style={{ background: 'rgba(0,0,0,0.5)', zIndex: 9999 }}
+            onClick={(e) => e.target === e.currentTarget && setShowHelp(false)}>
+          <div className="bg-white rounded shadow-lg p-4" style={{ maxWidth: 450 }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0 fw-bold">Categories Guide</h5>
+              <button type="button" className="btn-close" onClick={() => setShowHelp(false)}></button>
+            </div>
+            <h6>How to Import Categories:</h6>
+            <ol className="small mb-3">
+              <li>Click Import CSV/XLS to upload a file</li>
+              <li>Or click Template for Excel template</li>
+              <li>Fill in name (required) and description (optional)</li>
+              <li>Upload to add categories</li>
+            </ol>
+            <h6>Tips:</h6>
+            <ul className="small">
+              <li>Categories help organize items in POS</li>
+              <li>Each item belongs to one category</li>
+              <li>Services can also have categories</li>
+            </ul>
           </div>
         </div>
       )}

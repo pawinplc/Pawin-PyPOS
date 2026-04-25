@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import supabase from '../services/supabase';
-import { Plus, X } from 'lucide-react';
+import { usersAPI } from '../services/supabase';
 import toast from 'react-hot-toast';
 
 const Users = () => {
@@ -21,10 +20,10 @@ const Users = () => {
 
   const loadUsers = async () => {
     try {
-      const { data, error } = await supabase.auth.admin.listUsers();
-      if (error) throw error;
-      setUsers(data.users || []);
+      const data = await usersAPI.getAll();
+      setUsers(data || []);
     } catch (error) {
+      console.error('Failed to load users:', error);
       toast.error('Failed to load users');
     } finally {
       setLoading(false);
@@ -147,25 +146,21 @@ const Users = () => {
                     <td>
                       <div className="d-flex align-items-center gap-3">
                         <div className="avatar avatar-sm avatar-primary">
-                          <span className="avatar-initials">{getInitials(user.user_metadata?.full_name)}</span>
+                          <span className="avatar-initials">{getInitials(user.full_name)}</span>
                         </div>
-                        <span className="fw-medium">{user.user_metadata?.full_name || '-'}</span>
+                        <span className="fw-medium">{user.full_name || '-'}</span>
                       </div>
                     </td>
                     <td>{user.email}</td>
                     <td>
-                      {user.user_metadata?.role === 'admin' ? (
+                      {user.role === 'admin' ? (
                         <span className="badge bg-danger-subtle text-danger border border-danger">Admin</span>
                       ) : (
                         <span className="badge bg-info-subtle text-info border border-info">Staff</span>
                       )}
                     </td>
                     <td>
-                      {user.confirmed_at ? (
-                        <span className="badge bg-success-subtle text-success border border-success">Active</span>
-                      ) : (
-                        <span className="badge bg-warning-subtle text-warning border border-warning">Pending</span>
-                      )}
+                      <span className="badge bg-success-subtle text-success border border-success">Active</span>
                     </td>
                     <td className="small">{new Date(user.created_at).toLocaleDateString()}</td>
                   </tr>

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = false }) => {
   const showMobile = isMobile && mobileOpen;
   const location = useLocation();
-  const { logout, isAdmin } = useAuth();
+  const { logout, isAdmin, user } = useAuth();
 
   const menuItems = [
     ...(isAdmin() ? [{ path: '/admin', icon: 'ti-layout', label: 'Dashboard' }] : [{ path: '/', icon: 'ti-home', label: 'Dashboard' }]),
@@ -16,7 +16,7 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
     { path: '/stock', icon: 'ti-archive', label: 'Stock', adminOnly: true, adminViewOnly: true, alertPath: '/stock' },
     { path: '/sales', icon: 'ti-receipt', label: 'Sales' },
     { path: '/reports', icon: 'ti-chart-bar', label: 'Reports', adminOnly: true, adminExportOnly: true },
-    ...(isAdmin() ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
+    ...(user?.role === 'admin' ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
   ];
 
   const filteredMenu = menuItems.filter(item => !item.adminOnly || isAdmin());
@@ -55,7 +55,7 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
           </li>
         ))}
 
-        <li className="nav-section-label px-4 pt-4 pb-2"><small className="nav-text">Account</small></li>
+        <li className="nav-section-label px-4 pt-4 pb-2"><small className="nav-text">Settings</small></li>
         <li>
           <Link
             to="/account"

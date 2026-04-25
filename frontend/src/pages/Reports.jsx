@@ -3,7 +3,7 @@ import { salesAPI, stockAPI } from '../services/supabase';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import toast from 'react-hot-toast';
 
 const Reports = ({ isAdmin: propIsAdmin }) => {
@@ -139,12 +139,37 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
     toast.success('Daily sales exported!');
   };
 
+  const addBranding = (doc, title) => {
+    // Add Logo
+    try {
+      const logoUrl = `${window.location.origin}${import.meta.env.BASE_URL}logo1.png`;
+      doc.addImage(logoUrl, 'PNG', 14, 10, 15, 15);
+    } catch (e) {
+      console.warn('Could not add logo to PDF:', e);
+    }
+
+    doc.setFontSize(18);
+    doc.setTextColor(41, 128, 185);
+    doc.text('PAWIN PYPOS', 32, 18);
+    
+    doc.setFontSize(8);
+    doc.setTextColor(100);
+    doc.text('Premium Stationery Inventory System', 32, 22);
+    
+    doc.setFontSize(14);
+    doc.setTextColor(33);
+    doc.text(title, 14, 35);
+    
+    doc.setFontSize(9);
+    doc.setTextColor(100);
+    doc.text(`Report Date: ${getFormattedDate()}`, 14, 40);
+    
+    return 45; // Return Y offset where table should start
+  };
+
   const exportDailySalesPdf = () => {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('PAWIN PYPOS - DAILY SALES REPORT', 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Report Date: ${getFormattedDate()}`, 14, 28);
+    const startY = addBranding(doc, 'DAILY SALES REPORT');
 
     const tableData = [];
     reportData.dailySales.forEach(sale => {
@@ -161,10 +186,10 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
       });
     });
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [['Receipt #', 'Date & Time', 'Category', 'Item', 'Qty', 'Unit Price', 'Subtotal']],
       body: tableData,
-      startY: 35,
+      startY: startY,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [41, 128, 185] }
     });
@@ -236,10 +261,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
 
   const exportMonthlySalesPdf = () => {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('PAWIN PYPOS - MONTHLY SALES REPORT', 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Report Date: ${getFormattedDate()}`, 14, 28);
+    const startY = addBranding(doc, 'MONTHLY SALES REPORT');
 
     const tableData = [];
     let grandTotal = 0;
@@ -269,10 +291,10 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
       }
     });
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [['Receipt #', 'Date & Time', 'Category', 'Item', 'Qty', 'Unit Price', 'Subtotal']],
       body: tableData,
-      startY: 35,
+      startY: startY,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [41, 128, 185] }
     });
@@ -326,10 +348,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
 
   const exportStockArrivalsPdf = () => {
     const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text('PAWIN PYPOS - STOCK ARRIVALS REPORT', 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Report Date: ${getFormattedDate()}`, 14, 28);
+    const startY = addBranding(doc, 'STOCK ARRIVALS REPORT');
 
     const tableData = reportData.stockMovements.map((m, index) => [
       index + 1,
@@ -341,10 +360,10 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
       m.notes || '-'
     ]);
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [['#', 'Date', 'Item', 'Category', 'Qty', 'Reference', 'Notes']],
       body: tableData,
-      startY: 35,
+      startY: startY,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [41, 128, 185] }
     });
@@ -570,40 +589,54 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
               <i className={`ti ti-refresh ${refreshing ? 'fa-spin' : ''}`}></i>
               {refreshing ? ' Refreshing...' : ' Refresh'}
             </button>
-            {!isAdmin && (
-              <>
-                <div className="dropdown">
-                  <button className="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i className="ti ti-file-export me-1"></i>
-                    Excel
-                  </button>
-                  <ul className="dropdown-menu">
-                    <li><button className="dropdown-item" onClick={exportDailySales}>Daily Sales</button></li>
-                    <li><button className="dropdown-item" onClick={exportMonthlySales}>Monthly Sales</button></li>
-                    <li><button className="dropdown-item" onClick={exportStockArrivals}>Stock Arrivals</button></li>
-                    <li><hr className="dropdown-divider" /></li>
-                    <li><button className="dropdown-item fw-bold" onClick={exportAllReports}>Export All</button></li>
-                  </ul>
-                </div>
-                <div className="dropdown">
-                  <button className="btn btn-outline-secondary btn-sm dropdown-toggle" data-bs-toggle="dropdown">
-                    <i className="ti ti-file-type-pdf me-1"></i>
-                    PDF
-                  </button>
-                  <ul className="dropdown-menu">
-                    <li><button className="dropdown-item" onClick={exportDailySalesPdf}>Daily Sales</button></li>
-                    <li><button className="dropdown-item" onClick={exportMonthlySalesPdf}>Monthly Sales</button></li>
-                    <li><button className="dropdown-item" onClick={exportStockArrivalsPdf}>Stock Arrivals</button></li>
-                  </ul>
-                </div>
-              </>
-            )}
-            {isAdmin && (
-              <button className="btn btn-outline-secondary btn-sm" onClick={exportStockArrivals}>
-                <i className="ti ti-package-export me-1"></i>
-                Export System Health
+            <div className="dropdown">
+              <button className="btn btn-primary d-flex align-items-center gap-2 px-3 shadow-sm hover-up" data-bs-toggle="dropdown">
+                <i className="ti ti-file-export fs-5"></i>
+                <span className="d-none d-sm-inline">Export Reports</span>
+                <i className="ti ti-chevron-down small opacity-50"></i>
               </button>
-            )}
+              <ul className="dropdown-menu dropdown-menu-end p-2 shadow-lg border-0 animate-fade-in" style={{ minWidth: '220px' }}>
+                <li className="dropdown-header text-uppercase small fw-bold text-muted px-3 pb-2">Excel Documents</li>
+                <li>
+                  <button className="dropdown-item rounded-2 py-2" onClick={exportDailySales}>
+                    <i className="ti ti-table me-2 text-success"></i> Daily Sales (.xlsx)
+                  </button>
+                </li>
+                <li>
+                  <button className="dropdown-item rounded-2 py-2" onClick={exportMonthlySales}>
+                    <i className="ti ti-calendar-event me-2 text-success"></i> Monthly Sales (.xlsx)
+                  </button>
+                </li>
+                <li>
+                  <button className="dropdown-item rounded-2 py-2" onClick={exportStockArrivals}>
+                    <i className="ti ti-package me-2 text-success"></i> Stock Arrivals (.xlsx)
+                  </button>
+                </li>
+                <li><hr className="dropdown-divider mx-2" /></li>
+                <li className="dropdown-header text-uppercase small fw-bold text-muted px-3 pb-2">PDF Documents</li>
+                <li>
+                  <button className="dropdown-item rounded-2 py-2" onClick={exportDailySalesPdf}>
+                    <i className="ti ti-file-type-pdf me-2 text-danger"></i> Daily Sales PDF
+                  </button>
+                </li>
+                <li>
+                  <button className="dropdown-item rounded-2 py-2" onClick={exportMonthlySalesPdf}>
+                    <i className="ti ti-file-type-pdf me-2 text-danger"></i> Monthly Sales PDF
+                  </button>
+                </li>
+                <li>
+                  <button className="dropdown-item rounded-2 py-2" onClick={exportStockArrivalsPdf}>
+                    <i className="ti ti-file-type-pdf me-2 text-danger"></i> Stock Arrivals PDF
+                  </button>
+                </li>
+                <li><hr className="dropdown-divider mx-2" /></li>
+                <li>
+                  <button className="dropdown-item rounded-2 py-2 fw-bold text-primary" onClick={exportAllReports}>
+                    <i className="ti ti-files me-2"></i> Export All (Bundle)
+                  </button>
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
       </div>

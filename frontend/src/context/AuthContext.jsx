@@ -56,11 +56,36 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (username, password) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email: username,
-        password: password,
+      // Use direct fetch to avoid SDK issues
+      const supabaseUrl = 'https://dbocluzncuhhlrkeggez.supabase.co';
+      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRib2NsdXpuY3VoaGxya2VnZ2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5Njg2MTQsImV4cCI6MjA5MDU0NDYxNH0.U7GgLVA4BzFh9DVyKoszK_07WQFvF_aot49JcwhtsAU';
+      
+      const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': supabaseKey,
+          'Authorization': `Bearer ${supabaseKey}`
+        },
+        body: JSON.stringify({ email: username, password })
       });
-      if (error) throw error;
+      
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error_description || err.msg || 'Login failed');
+      }
+      
+      const data = await response.json();
+      
+      // Set session in Supabase client
+      supabase.auth.setSession({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: data.expires_in,
+        expires_at: data.expires_at,
+        token_type: data.token_type,
+        user: data.user
+      });
       
       const userData = {
         id: data.user.id,

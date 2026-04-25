@@ -51,48 +51,35 @@ const AdminRoute = ({ children }) => {
 const AppRoutes = () => {
   const { user, loading, isAdmin } = useAuth();
 
-  if (loading) {
-    return <div className="page-loading">Loading...</div>;
-  }
-
   // Determine default dashboard based on role
   const DefaultDashboard = isAdmin() ? AdminDashboard : Dashboard;
 
   return (
     <Routes>
       <Route path="/" element={<Landing />} />
-      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <Login />} />
-      
-      <Route path="/dashboard" element={
-        <ProtectedRoute>
-          <Layout />
-        </ProtectedRoute>
+      <Route path="/login" element={user ? <Navigate to="/admin" replace /> : <Login />} />
+
+      {/* All protected routes at top level to match Sidebar links */}
+      <Route element={
+        loading ? (
+          <div className="page-loading">Loading...</div>
+        ) : (
+          <ProtectedRoute><Layout /></ProtectedRoute>
+        )
       }>
-        <Route index element={<DefaultDashboard />} />
-        <Route path="pos" element={<POS />} />
-        <Route path="sales" element={<Sales />} />
-        <Route path="reports" element={<Reports isAdmin={isAdmin()} />} />
-        <Route path="admin" element={
-          <AdminRoute><AdminDashboard /></AdminRoute>
-        } />
-        <Route path="services" element={
-          <AdminRoute><Services isAdmin={isAdmin()} /></AdminRoute>
-        } />
-        <Route path="items" element={
-          <AdminRoute><Items isAdmin={isAdmin()} /></AdminRoute>
-        } />
-        <Route path="categories" element={
-          <AdminRoute><Categories isAdmin={isAdmin()} /></AdminRoute>
-        } />
-        <Route path="stock" element={
-          <AdminRoute><Stock isAdmin={isAdmin()} /></AdminRoute>
-        } />
-        <Route path="users" element={
-          <AdminRoute><Users /></AdminRoute>
-        } />
-        <Route path="account" element={<Account />} />
-        <Route path="analytics" element={<Analytics />} />
-        <Route path="sales/:period" element={<SalesDetail />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/pos" element={<POS />} />
+        <Route path="/sales" element={<Sales />} />
+        <Route path="/reports" element={<Reports isAdmin={isAdmin()} />} />
+        <Route path="/services" element={<Services isAdmin={isAdmin()} />} />
+        <Route path="/items" element={<Items isAdmin={isAdmin()} />} />
+        <Route path="/categories" element={<Categories isAdmin={isAdmin()} />} />
+        <Route path="/stock" element={<Stock isAdmin={isAdmin()} />} />
+        <Route path="/users" element={<Users />} />
+        <Route path="/account" element={<Account />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/sales/:period" element={<SalesDetail />} />
+        <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       </Route>
     </Routes>
   );

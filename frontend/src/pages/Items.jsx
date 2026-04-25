@@ -26,6 +26,8 @@ const Items = ({ isAdmin = false }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [imageUploading, setImageUploading] = useState(false);
 
+  const [showHelp, setShowHelp] = useState(false);
+
   useEffect(() => {
     loadData();
     
@@ -367,6 +369,10 @@ const Items = ({ isAdmin = false }) => {
             <button className="btn btn-outline-secondary" onClick={handleExport}>
               <i className="ti ti-download me-1"></i>
               Export
+            </button>
+            <button className="btn btn-outline-secondary" onClick={() => setShowHelp(!showHelp)}>
+              <i className="ti ti-help-circle me-1"></i>
+              Help
             </button>
             <button className="btn btn-outline-secondary" onClick={downloadTemplate}>
               <i className="ti ti-file-arrow-up me-1"></i>
@@ -749,6 +755,31 @@ const Items = ({ isAdmin = false }) => {
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {showHelp && (
+        <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center" 
+            style={{ background: 'rgba(0,0,0,0.5)', zIndex: 9999 }}
+            onClick={(e) => e.target === e.currentTarget && setShowHelp(false)}>
+          <div className="bg-white rounded shadow-lg p-4" style={{ maxWidth: 450 }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+              <h5 className="mb-0 fw-bold">Items Guide</h5>
+              <button type="button" className="btn-close" onClick={() => setShowHelp(false)}></button>
+            </div>
+            <h6>How to Import Items:</h6>
+            <ol className="small mb-3">
+              <li>Click Template to download Excel template</li>
+              <li>Fill in item details (name, SKU, prices, quantity)</li>
+              <li>Click Import Excel and select your file</li>
+              <li>Review and confirm to add items</li>
+            </ol>
+            <h6>How to Export Items:</h6>
+            <ol className="small">
+              <li>Use Export dropdown to download as Excel or PDF</li>
+              <li>Use filters to export specific categories</li>
+            </ol>
           </div>
         </div>
       )}
