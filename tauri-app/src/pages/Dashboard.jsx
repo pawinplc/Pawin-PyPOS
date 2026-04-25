@@ -132,7 +132,7 @@ if (isRefresh) setRefreshing(false);
 
       <div className="col-12">
         <div className="row g-3">
-          <div className="col-sm-6 col-lg-3">
+          <div className="col-sm-6 col-lg">
             <div className="card p-3 bg-primary bg-opacity-10 border border-primary border-opacity-25 rounded-2">
               <div className="d-flex gap-3 align-items-center">
                 <div className="icon-shape icon-md bg-primary text-white rounded-2">
@@ -146,7 +146,7 @@ if (isRefresh) setRefreshing(false);
             </div>
           </div>
 
-          <div className="col-sm-6 col-lg-3">
+          <div className="col-sm-6 col-lg">
             <div className="card p-3 bg-danger bg-opacity-10 border border-danger border-opacity-25 rounded-2">
               <div className="d-flex gap-3 align-items-center">
                 <div className="icon-shape icon-md bg-danger text-white rounded-2">
@@ -160,7 +160,7 @@ if (isRefresh) setRefreshing(false);
             </div>
           </div>
 
-          <div className="col-sm-6 col-lg-3">
+          <div className="col-sm-6 col-lg">
             <div className="card p-3 bg-success bg-opacity-10 border border-success border-opacity-25 rounded-2">
               <div className="d-flex gap-3 align-items-center">
                 <div className="icon-shape icon-md bg-success text-white rounded-2">
@@ -174,7 +174,7 @@ if (isRefresh) setRefreshing(false);
             </div>
           </div>
 
-          <div className="col-sm-6 col-lg-3">
+          <div className="col-sm-6 col-lg">
             <div className="card p-3 bg-info bg-opacity-10 border border-info border-opacity-25 rounded-2">
               <div className="d-flex gap-3 align-items-center">
                 <div className="icon-shape icon-md bg-info text-white rounded-2">
@@ -183,6 +183,20 @@ if (isRefresh) setRefreshing(false);
                 <div>
                   <p className="mb-1 small text-muted">Transactions</p>
                   <h3 className="fw-bold mb-0">{stats?.today_transactions || 0}</h3>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="col-sm-6 col-lg">
+            <div className="card p-3 bg-warning bg-opacity-10 border border-warning border-opacity-25 rounded-2">
+              <div className="d-flex gap-3 align-items-center">
+                <div className="icon-shape icon-md bg-warning text-white rounded-2">
+                  <i className="ti ti-users fs-5"></i>
+                </div>
+                <div>
+                  <p className="mb-1 small text-muted">Active Users</p>
+                  <h3 className="fw-bold mb-0">{stats?.active_users || 0}</h3>
                 </div>
               </div>
             </div>

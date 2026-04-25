@@ -4,6 +4,7 @@ import supabase from '../services/supabase';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  console.log('AuthProvider: Mounting...');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 

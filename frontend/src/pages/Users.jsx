@@ -40,28 +40,10 @@ const Users = () => {
     setFormData({ email: '', password: '', full_name: '', role: 'staff' });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    if (!formData.email || !formData.password) {
-      toast.error('Email and password are required');
-      return;
-    }
-
-    try {
-      const { error } = await supabase.auth.admin.createUser({
-        email: formData.email,
-        password: formData.password,
-        user_metadata: { full_name: formData.full_name, role: formData.role }
-      });
-
-      if (error) throw error;
-      toast.success('User created successfully');
-      closeModal();
-      loadUsers();
-    } catch (error) {
-      toast.error(error.message || 'Failed to create user');
-    }
-  };
+    const handleSubmit = async (e) => {
+      e.preventDefault();
+      toast.error('System user creation is restricted to the Cloud Management Console for security.');
+    };
 
   const getInitials = (name) => {
     if (!name) return 'U';

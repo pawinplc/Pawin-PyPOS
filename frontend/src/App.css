@@ -2506,7 +2506,7 @@ footer {
   color: white;
 }
 
-/* Dropdown Menu Dark Mode */
+/* Dropdown Dark Mode */
 [data-theme="dark"] .dropdown-menu {
   background: var(--bg-white);
   border-color: var(--border-color);
@@ -2524,15 +2524,11 @@ footer {
   border-color: var(--border-color) !important;
 }
 
-[data-theme="dark"] .dropdown-toggle::after {
-  border-color: var(--text-primary) !important;
+[data-theme="dark"] .btn-group > .btn::after,
+[data-theme="dark"] .dropdown > .btn::after,
+[data-theme="dark"] .btn::after {
+  display: none !important;
 }
-
-[data-theme="dark"] .btn-outline-secondary.dropdown-toggle::after {
-  border-color: var(--text-primary) !important;
-}
-
-/* Cards Dark Mode */
 [data-theme="dark"] .card {
   background: var(--bg-white);
   border-color: var(--border-color);

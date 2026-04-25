@@ -1,31 +1,20 @@
-name: Build & Release Tauri App
+name: Build Tauri App
 
 on:
   push:
     tags:
       - 'v*'
   workflow_dispatch:
-  # Optional: Trigger build on push to main (uploading artifacts but not releasing)
-  push:
-    branches:
-      - main
-      - master
 
 permissions:
   contents: write
 
 jobs:
-  publish:
+  build:
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - platform: 'macos-latest'
-            args: '--target universal-apple-darwin'
-          - platform: 'ubuntu-22.04'
-            args: ''
-          - platform: 'windows-latest'
-            args: ''
+        platform: [windows-latest, ubuntu-22.04]
 
     runs-on: ${{ matrix.platform }}
     steps:
@@ -36,13 +25,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: 'npm'
-          cache-dependency-path: './tauri-app/package-lock.json'
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
 
       - name: Install Linux dependencies (Ubuntu only)
         if: matrix.platform == 'ubuntu-22.04'
@@ -58,13 +43,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
         with:
           projectPath: ./tauri-app
           tagName: v__VERSION__
           releaseName: "Pawin PyPOS v__VERSION__"
-          releaseBody: "Automated build of Pawin PyPOS Desktop for Windows, Linux, and macOS."
+          releaseBody: "Automated build of Pawin PyPOS Desktop."
           releaseDraft: true
           prerelease: false
-          args: ${{ matrix.args }}

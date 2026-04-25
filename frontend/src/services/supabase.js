@@ -212,43 +212,72 @@ export const salesAPI = {
 
 export const dashboardAPI = {
   async getStats() {
-    console.log('Fetching dashboard stats...');
-    
     const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    const today = `${year}-${month}-${day}`;
+    const today = now.toISOString().split('T')[0];
     
-    const { data: items, error: itemsError } = await supabase.from('items').select('id, quantity, min_stock_level, is_service');
-    console.log('Items fetched:', items?.length, itemsError);
+    const [itemsResult, salesResult, usersResult] = await Promise.all([
+      supabase.from('items').select('id, quantity, min_stock_level, is_service'),
+      supabase.from('sales').select('id, final_amount, created_at'),
+      supabase.from('users').select('id')
+    ]);
     
-    if (itemsError) {
-      console.error('items error:', itemsError);
-    }
-    
-    const totalItems = items?.length || 0;
-    const lowStock = items?.filter(i => i.is_service !== true && i.quantity <= (i.min_stock_level || 0)).length || 0;
-    const outOfStock = items?.filter(i => i.is_service !== true && i.quantity <= 0).length || 0;
-    
-    const { data: allSales, error: salesError } = await supabase.from('sales').select('id, final_amount, created_at');
-    console.log('Sales fetched:', allSales?.length, salesError);
+    const items = itemsResult.data || [];
+    const allSales = salesResult.data || [];
+    const users = usersResult.data || [];
     
     const todayKey = today + 'T';
-    const todaySales = (allSales || []).filter(s => s.created_at && s.created_at.startsWith(todayKey));
-    const todayCount = todaySales.length;
-    
-    const { data: users, error: usersError } = await supabase.from('users').select('id');
-    const activeUsers = users?.length || 0;
-    console.log('Users fetched:', activeUsers, usersError);
+    const todaySales = allSales.filter(s => s.created_at?.startsWith(todayKey));
     
     return {
-      total_items: totalItems,
-      low_stock_items: lowStock,
-      out_of_stock: outOfStock,
-      active_users: activeUsers,
+      total_items: items.length,
+      low_stock_items: items.filter(i => i.is_service !== true && i.quantity <= (i.min_stock_level || 0)).length,
+      out_of_stock: items.filter(i => i.is_service !== true && i.quantity <= 0).length,
+      active_users: users.length,
       today_sales: todaySales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0),
-      today_transactions: todayCount
+      today_transactions: todaySales.length
+    };
+  },
+
+  async getAdminStats() {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const thisMonth = today.substring(0, 7);
+    
+    const [itemsResult, salesResult, usersResult] = await Promise.all([
+      supabase.from('items').select('id, quantity, min_stock_level, is_service'),
+      supabase.from('sales').select('id, final_amount, created_at'),
+      supabase.from('users').select('id')
+    ]);
+    
+    const items = itemsResult.data || [];
+    const allSales = salesResult.data || [];
+    const users = usersResult.data || [];
+    
+    const todayKey = today + 'T';
+    const todaySales = allSales.filter(s => s.created_at?.startsWith(todayKey));
+    
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay());
+    const weekKey = weekStart.toISOString().split('T')[0];
+    const weekSales = allSales.filter(s => s.created_at >= weekKey);
+    
+    const monthKey = thisMonth + '-';
+    const monthSales = allSales.filter(s => s.created_at?.startsWith(monthKey));
+    
+    return {
+      total_items: items.length,
+      low_stock_items: items.filter(i => i.is_service !== true && i.quantity <= (i.min_stock_level || 0)).length,
+      out_of_stock: items.filter(i => i.is_service !== true && i.quantity <= 0).length,
+      today_sales: todaySales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0),
+      today_transactions: todaySales.length,
+      week_sales: weekSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0),
+      week_transactions: weekSales.length,
+      month_sales: monthSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0),
+      month_transactions: monthSales.length,
+      total_sales: allSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0),
+      total_transactions: allSales.length,
+      total_users: users.length,
+      active_users: users.length
     };
   },
 
@@ -266,93 +295,22 @@ export const dashboardAPI = {
   },
 
   async getLowStock(limit = 5) {
-    const { data: items, error } = await supabase
+    const { data: items } = await supabase
       .from('items')
       .select('*, categories(name)')
       .eq('is_service', false)
-      .order('quantity', { ascending: true })
-      .limit(limit);
-    if (error) {
-      console.error('getLowStock error:', error);
-      return [];
-    }
-    return (items || []).filter(i => i.quantity <= (i.min_stock_level || 0));
-  },
-
-  async getAdminStats() {
-    console.log('getAdminStats called - START');
-    console.log('Querying items table...');
+      .order('quantity', { ascending: true });
     
-    try {
-      console.log('About to query supabase...');
-      const [itemsResult, salesResult, usersResult] = await Promise.all([
-        supabase.from('items').select('id, quantity, min_stock_level, is_service'),
-        supabase.from('sales').select('id, final_amount, created_at'),
-        supabase.from('users').select('id')
-      ]);
-      
-      console.log('Items query completed:', itemsResult);
-      console.log('Sales query completed:', salesResult);
-      
-      const totalItems = items.length;
-      const lowStock = items.filter(i => i.is_service !== true && i.quantity <= (i.min_stock_level || 0)).length;
-      const outOfStock = items.filter(i => i.is_service !== true && i.quantity <= 0).length;
-      
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      const todayKey = today + 'T';
-      const todaySales = allSales.filter(s => s.created_at?.startsWith(todayKey));
-      const todayTotal = todaySales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
-      
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - now.getDay());
-      weekStart.setHours(0, 0, 0, 0);
-      const weekStartKey = weekStart.toISOString().split('T')[0] + 'T';
-      const weekSales = allSales.filter(s => s.created_at >= weekStartKey);
-      const weekTotal = weekSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
-      
-      const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const monthKey = thisMonth + '-';
-      const monthSales = allSales.filter(s => s.created_at?.startsWith(monthKey));
-      const monthTotal = monthSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
-      
-      const thisYear = String(now.getFullYear());
-      const yearSales = allSales.filter(s => s.created_at?.startsWith(thisYear));
-      const yearTotal = yearSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
-      
-      const totalUsers = users.length;
-      
-      return {
-        total_items: totalItems,
-        low_stock_items: lowStock,
-        out_of_stock: outOfStock,
-        today_sales: todayTotal,
-        today_transactions: todaySales.length,
-        week_sales: weekTotal,
-        week_transactions: weekSales.length,
-        month_sales: monthTotal,
-        month_transactions: monthSales.length,
-        total_sales: yearTotal,
-        total_transactions: yearSales.length,
-        total_users: totalUsers,
-        active_users: totalUsers
-      };
-    } catch (err) {
-      console.error('getAdminStats error:', err);
-      throw err;
-    }
+    return (items || [])
+      .filter(i => i.quantity <= (i.min_stock_level || 0))
+      .slice(0, limit);
   },
 
   async getUsersStats() {
-    const { data: users } = await supabase
-      .from('users')
-      .select('id, email, full_name, role')
-      .order('full_name');
-    
+    const { data: users } = await supabase.from('users').select('id, full_name, role');
     return {
       total_users: users?.length || 0,
       active_users: users?.length || 0,
-      all_users: users || [],
       top_items: []
     };
   }
@@ -360,77 +318,9 @@ export const dashboardAPI = {
 
 export const usersAPI = {
   async getAll() {
-    const { data, error } = await supabase
-      .from('users')
-      .select('*, roles(name)')
-      .order('full_name');
+    const { data, error } = await supabase.from('users').select('*').order('full_name');
     if (error) throw error;
-return data;
-  },
-
-  async getAdminStats() {
-    console.log('Fetching admin dashboard stats...');
-    
-    try {
-      const [itemsResult, salesResult, usersResult] = await Promise.all([
-        supabase.from('items').select('id, quantity, min_stock_level, is_service'),
-        supabase.from('sales').select('id, final_amount, created_at'),
-        supabase.from('users').select('id')
-      ]);
-      
-      const items = itemsResult.data || [];
-      const allSales = salesResult.data || [];
-      const users = usersResult.data || [];
-      
-      console.log('Items:', items.length, itemsResult.error);
-      
-      const totalItems = items.length;
-      const lowStock = items.filter(i => i.is_service !== true && i.quantity <= (i.min_stock_level || 0)).length;
-      const outOfStock = items.filter(i => i.is_service !== true && i.quantity <= 0).length;
-      
-      const now = new Date();
-      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      const todayKey = today + 'T';
-      const todaySales = allSales.filter(s => s.created_at?.startsWith(todayKey));
-      const todayTotal = todaySales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
-      
-      const weekStart = new Date(now);
-      weekStart.setDate(now.getDate() - now.getDay());
-      weekStart.setHours(0, 0, 0, 0);
-      const weekStartKey = weekStart.toISOString().split('T')[0] + 'T';
-      const weekSales = allSales.filter(s => s.created_at >= weekStartKey);
-      const weekTotal = weekSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
-      
-      const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-      const monthKey = thisMonth + '-';
-      const monthSales = allSales.filter(s => s.created_at?.startsWith(monthKey));
-      const monthTotal = monthSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
-      
-      const thisYear = String(now.getFullYear());
-      const yearSales = allSales.filter(s => s.created_at?.startsWith(thisYear));
-      const yearTotal = yearSales.reduce((sum, s) => sum + parseFloat(s.final_amount || 0), 0);
-      
-      const totalUsers = users.length;
-      
-      return {
-        total_items: totalItems,
-        low_stock_items: lowStock,
-        out_of_stock: outOfStock,
-        today_sales: todayTotal,
-        today_transactions: todaySales.length,
-        week_sales: weekTotal,
-        week_transactions: weekSales.length,
-        month_sales: monthTotal,
-        month_transactions: monthSales.length,
-        total_sales: yearTotal,
-        total_transactions: yearSales.length,
-        total_users: totalUsers,
-        active_users: totalUsers
-      };
-    } catch (err) {
-      console.error('getAdminStats error:', err);
-      throw err;
-    }
+    return data;
   }
 };
 
@@ -457,7 +347,6 @@ export const analyticsAPI = {
   }
 };
 
-// Real-time subscription helper
 export const subscribeToTable = (table, callback) => {
   try {
     const subscription = supabase
@@ -465,15 +354,11 @@ export const subscribeToTable = (table, callback) => {
       .on('postgres_changes', { event: '*', schema: 'public', table }, (payload) => {
         callback(payload);
       })
-      .subscribe((status) => {
-        if (status === 'SUBSCRIBED') {
-          console.log('Realtime subscribed to:', table);
-        }
-      });
+      .subscribe();
 
     return () => supabase.removeChannel(subscription);
   } catch (error) {
-    console.warn('Realtime not available for:', table, error.message);
+    console.warn('Realtime subscription failed:', error);
     return () => {};
   }
 };

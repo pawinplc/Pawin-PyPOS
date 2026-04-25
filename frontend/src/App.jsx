@@ -89,17 +89,7 @@ function App() {
   return (
     <ErrorBoundary>
       <HashRouter>
-        <AuthProvider>
-          <AppRoutes />
-          <Toaster 
-            position="top-right"
-            theme="light"
-            toastOptions={{
-              duration: 3000,
-              className: 'toast-custom',
-            }}
-          />
-        </AuthProvider>
+        <AppRoutes />
       </HashRouter>
     </ErrorBoundary>
   );
