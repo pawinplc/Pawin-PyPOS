@@ -100,7 +100,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
     }
 
     doc.setFontSize(18);
-    doc.setTextColor(41, 128, 185);
+    doc.setTextColor(33, 37, 41);
     doc.text('PAWIN PYPOS', 32, 18);
     
     doc.setFontSize(8);
@@ -177,7 +177,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
       body: tableData,
       startY: startY,
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [41, 128, 185] }
+      headStyles: { fillColor: [33, 37, 41] }
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
@@ -267,7 +267,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
       body: tableData,
       startY: startY,
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [41, 128, 185] }
+      headStyles: { fillColor: [33, 37, 41] }
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
@@ -321,7 +321,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
       body: tableData,
       startY: startY,
       styles: { fontSize: 8 },
-      headStyles: { fillColor: [41, 128, 185] }
+      headStyles: { fillColor: [33, 37, 41] }
     });
 
     const finalY = doc.lastAutoTable.finalY + 10;
