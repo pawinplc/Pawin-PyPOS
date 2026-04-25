@@ -51,9 +51,9 @@ const Login = () => {
       <TitleBar />
       <div className="login-container" style={{ marginTop: '32px' }}>
         <div className="card login-card" style={{ maxWidth: 420, width: '100%', position: 'relative' }}>
-          <button 
-            onClick={toggleTheme} 
-            className="theme-toggle-btn" 
+          <button
+            onClick={toggleTheme}
+            className="theme-toggle-btn"
             style={{ position: 'absolute', top: '15px', right: '15px', width: '32px', height: '32px', fontSize: '1rem' }}
             title="Toggle Theme"
           >
@@ -62,9 +62,9 @@ const Login = () => {
           <div className="card-body p-5">
             <div className="text-center mb-4">
               <div className="mb-3 d-inline-block logo-ring">
-                <img 
-                  src={`${import.meta.env.BASE_URL}logo1.png`} 
-                  alt="Pawin PyPOS" 
+                <img
+                  src={`${import.meta.env.BASE_URL}logo1.png`}
+                  alt="Pawin PyPOS"
                   style={{ width: 60, height: 60, objectFit: 'contain' }}
                 />
               </div>
