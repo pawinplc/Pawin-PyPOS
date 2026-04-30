@@ -158,11 +158,13 @@ export const salesAPI = {
     for (const sale of data) {
       const { data: saleItems } = await supabase
         .from('sale_items')
-        .select('*, items(name, categories(name))')
+        .select('*, items(name, cost_price, is_service, categories(name))')
         .eq('sale_id', sale.id);
       sale.sale_items = (saleItems || []).map(si => ({ 
         ...si, 
         item_name: si.items?.name,
+        cost_price: si.items?.cost_price || 0,
+        is_service: si.items?.is_service || false,
         category_name: si.items?.categories?.name
       }));
     }

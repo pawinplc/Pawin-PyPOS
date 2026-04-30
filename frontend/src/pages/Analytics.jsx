@@ -11,6 +11,7 @@ const Analytics = () => {
   const [salesData, setSalesData] = useState([]);
   const [categoryData, setCategoryData] = useState([]);
   const [topItems, setTopItems] = useState([]);
+  const [itemProfits, setItemProfits] = useState([]);
   const [stockData, setStockData] = useState({ low: 0, medium: 0, good: 0, out: 0 });
   const [period, setPeriod] = useState('week'); // week, month, year
   const [error, setError] = useState(null);
@@ -67,15 +68,23 @@ const Analytics = () => {
 
     const filtered = sales.filter(s => new Date(s.created_at) >= startDate);
     
-    // Group by date
     const grouped = {};
     filtered.forEach(sale => {
       const date = new Date(sale.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-      grouped[date] = (grouped[date] || 0) + parseFloat(sale.final_amount || 0);
+      const saleRevenue = parseFloat(sale.final_amount || 0);
+      let saleCost = 0;
+      (sale.sale_items || []).forEach(item => {
+        saleCost += (parseFloat(item.cost_price) || 0) * (parseFloat(item.quantity) || 0);
+      });
+      if (!grouped[date]) {
+        grouped[date] = { amount: 0, profit: 0 };
+      }
+      grouped[date].amount += saleRevenue;
+      grouped[date].profit += (saleRevenue - saleCost);
     });
 
     const data = Object.entries(grouped)
-      .map(([date, amount]) => ({ date, amount }))
+      .map(([date, vals]) => ({ date, amount: vals.amount, profit: vals.profit }))
       .sort((a, b) => new Date(a.date) - new Date(b.date))
       .slice(-15);
 
@@ -98,28 +107,43 @@ const Analytics = () => {
   };
 
   const processTopItems = (sales) => {
+    const now = new Date();
+    let startDate = new Date();
+    if (period === 'week') startDate.setDate(now.getDate() - 7);
+    else if (period === 'month') startDate.setMonth(now.getMonth() - 1);
+    else startDate.setFullYear(now.getFullYear() - 1);
+
+    const filtered = sales.filter(s => new Date(s.created_at) >= startDate);
+
     const itemTotals = {};
-    sales.slice(0, 50).forEach(sale => {
+    filtered.forEach(sale => {
       (sale.sale_items || []).forEach(item => {
-        const name = item.items?.name || `Item ${item.item_id}`;
+        const name = item.item_name || `Item ${item.item_id}`;
         if (!itemTotals[name]) {
-          itemTotals[name] = { name, quantity: 0, revenue: 0 };
+          itemTotals[name] = { name, quantity: 0, revenue: 0, profit: 0, cost: 0 };
         }
-        itemTotals[name].quantity += item.quantity || 0;
-        itemTotals[name].revenue += (item.quantity || 0) * (item.unit_price || 0);
+        const qty = parseFloat(item.quantity) || 0;
+        const rev = qty * (parseFloat(item.unit_price) || 0);
+        const cost = qty * (parseFloat(item.cost_price) || 0);
+        itemTotals[name].quantity += qty;
+        itemTotals[name].revenue += rev;
+        itemTotals[name].cost += cost;
+        itemTotals[name].profit += (rev - cost);
       });
     });
 
     const data = Object.values(itemTotals)
-      .sort((a, b) => b.revenue - a.revenue)
-      .slice(0, 8)
+      .sort((a, b) => b.profit - a.profit)
       .map(item => ({
-        name: item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name,
-        quantity: item.quantity,
-        revenue: item.revenue
+        ...item,
+        margin: item.revenue > 0 ? ((item.profit / item.revenue) * 100).toFixed(1) : 0
       }));
 
-    setTopItems(data);
+    setTopItems(data.slice(0, 8).map(item => ({
+      ...item,
+      name: item.name.length > 15 ? item.name.substring(0, 15) + '...' : item.name
+    })));
+    setItemProfits(data);
   };
 
   const processStockData = (items) => {
@@ -191,6 +215,53 @@ const Analytics = () => {
         </div>
       </div>
 
+      {/* Profit Data Table */}
+      <div className="row g-3 mb-4">
+        <div className="col-12">
+          <div className="card">
+            <div className="card-header bg-white px-4 py-3">
+              <span className="fw-bold">Product Profitability Data</span>
+            </div>
+            <div className="table-responsive">
+              <table className="table mb-0 text-nowrap table-hover">
+                <thead className="table-light">
+                  <tr>
+                    <th>Product / Service</th>
+                    <th>Qty Sold</th>
+                    <th>Revenue (TSH)</th>
+                    <th>Cost (TSH)</th>
+                    <th>Profit (TSH)</th>
+                    <th>Margin (%)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemProfits.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="text-center text-muted py-4">No profitability data available for this period</td>
+                    </tr>
+                  ) : (
+                    itemProfits.map((item, idx) => (
+                      <tr key={idx} className="align-middle">
+                        <td className="fw-medium">{item.name}</td>
+                        <td>{item.quantity}</td>
+                        <td className="text-primary">{(item.revenue).toLocaleString()}</td>
+                        <td className="text-danger">{(item.cost).toLocaleString()}</td>
+                        <td className="text-success fw-bold">{(item.profit).toLocaleString()}</td>
+                        <td>
+                          <span className={`badge ${parseFloat(item.margin) >= 50 ? 'bg-success' : parseFloat(item.margin) >= 20 ? 'bg-warning' : 'bg-danger'}`}>
+                            {item.margin}%
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Revenue Chart */}
       <div className="row g-3 mb-4">
         <div className="col-12">
@@ -208,10 +279,11 @@ const Analytics = () => {
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip 
-                      formatter={(value) => ['TSH ' + value.toLocaleString(), 'Revenue']}
+                      formatter={(value, name) => ['TSH ' + value.toLocaleString(), name === 'amount' ? 'Revenue' : 'Profit']}
                       contentStyle={{ borderRadius: 8, border: '1px solid #eee' }}
                     />
-                    <Line type="monotone" dataKey="amount" stroke="#E66239" strokeWidth={2} dot={{ fill: '#E66239' }} />
+                    <Line type="monotone" dataKey="amount" name="amount" stroke="#E66239" strokeWidth={2} dot={{ fill: '#E66239' }} />
+                    <Line type="monotone" dataKey="profit" name="profit" stroke="#00C951" strokeWidth={2} dot={{ fill: '#00C951' }} />
                   </LineChart>
                 </ResponsiveContainer>
               )}
@@ -226,7 +298,7 @@ const Analytics = () => {
         <div className="col-lg-6">
           <div className="card h-100">
             <div className="card-header">
-              <span className="fw-bold">Top Selling Items</span>
+              <span className="fw-bold">Top Profitable Items</span>
             </div>
             <div className="card-body" style={{ height: 280 }}>
               {topItems.length === 0 ? (
@@ -237,7 +309,8 @@ const Analytics = () => {
                     <CartesianGrid strokeDasharray="3 3" stroke="#eee" />
                     <XAxis type="number" tick={{ fontSize: 12 }} />
                     <YAxis dataKey="name" type="category" width={80} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(value, name) => [value, name === 'quantity' ? 'Qty Sold' : 'Revenue']} />
+                    <Tooltip formatter={(value, name) => [name === 'profit' ? 'TSH ' + value.toLocaleString() : value, name === 'quantity' ? 'Qty Sold' : (name === 'profit' ? 'Profit' : 'Revenue')]} />
+                    <Bar dataKey="profit" fill="#00C951" name="profit" />
                     <Bar dataKey="quantity" fill="#E66239" name="quantity" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -307,6 +380,9 @@ const Analytics = () => {
           </div>
         </div>
       </div>
+
+
+
     </div>
   );
 };
