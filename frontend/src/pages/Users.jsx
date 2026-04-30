@@ -40,10 +40,47 @@ const Users = () => {
     setFormData({ email: '', password: '', full_name: '', role: 'staff' });
   };
 
-    const handleSubmit = async (e) => {
-      e.preventDefault();
-      toast.error('System user creation is restricted to the Cloud Management Console for security.');
-    };
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!formData.email) {
+      toast.error('Email is required');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      // For public.users, we generate a password hash if needed, but here we just store it
+      // Note: In a real app, you'd use an Edge Function to create the auth user too
+      await usersAPI.create({
+        email: formData.email,
+        username: formData.email.split('@')[0],
+        password_hash: 'managed_via_console', // Placeholder for now
+        full_name: formData.full_name,
+        role: formData.role
+      });
+
+      toast.success('User added to management table');
+      closeModal();
+      loadUsers();
+    } catch (error) {
+      console.error('Error creating user:', error);
+      toast.error(error.message || 'Failed to create user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this user?')) return;
+    
+    try {
+      await usersAPI.delete(id);
+      toast.success('User removed');
+      loadUsers();
+    } catch (error) {
+      toast.error('Failed to delete user');
+    }
+  };
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -120,6 +157,7 @@ const Users = () => {
                   <th>Role</th>
                   <th>Status</th>
                   <th>Created</th>
+                  <th className="text-end">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -145,6 +183,15 @@ const Users = () => {
                       <span className="badge bg-success-subtle text-success border border-success">Active</span>
                     </td>
                     <td className="small">{new Date(user.created_at).toLocaleDateString()}</td>
+                    <td className="text-end">
+                      <button 
+                        className="btn btn-sm btn-icon btn-light-danger" 
+                        onClick={() => handleDelete(user.id)}
+                        title="Delete User"
+                      >
+                        <i className="ti ti-trash"></i>
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

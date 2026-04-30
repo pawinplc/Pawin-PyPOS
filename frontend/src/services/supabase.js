@@ -255,6 +255,10 @@ export const dashboardAPI = {
     const allSales = salesResult.data || [];
     const users = usersResult.data || [];
     
+    if (itemsResult.error) console.error('Dashboard Items Error:', itemsResult.error);
+    if (salesResult.error) console.error('Dashboard Sales Error:', salesResult.error);
+    if (usersResult.error) console.error('Dashboard Users Error:', usersResult.error);
+    
     const todayKey = today + 'T';
     const todaySales = allSales.filter(s => s.created_at?.startsWith(todayKey));
     
@@ -309,20 +313,63 @@ export const dashboardAPI = {
   },
 
   async getUsersStats() {
-    const { data: users } = await supabase.from('users').select('id, full_name, role');
-    return {
-      total_users: users?.length || 0,
-      active_users: users?.length || 0,
-      top_items: []
-    };
+    try {
+      const { data: users, error } = await supabase.from('users').select('id, full_name, role');
+      if (error) throw error;
+      return {
+        total_users: users?.length || 0,
+        active_users: users?.length || 0,
+        top_items: []
+      };
+    } catch (error) {
+      console.error('getUsersStats error:', error);
+      return { total_users: 0, active_users: 0, top_items: [] };
+    }
   }
 };
 
 export const usersAPI = {
   async getAll() {
-    const { data, error } = await supabase.from('users').select('*').order('full_name');
+    const { data, error } = await supabase
+      .from('users')
+      .select('*')
+      .order('full_name', { ascending: true });
+    
+    if (error) {
+      console.error('usersAPI.getAll error:', error);
+      throw error;
+    }
+    return data || [];
+  },
+
+  async create(userData) {
+    const { data, error } = await supabase
+      .from('users')
+      .insert([userData])
+      .select()
+      .single();
     if (error) throw error;
     return data;
+  },
+
+  async update(id, userData) {
+    const { data, error } = await supabase
+      .from('users')
+      .update(userData)
+      .eq('id', id)
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id) {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
+    return true;
   }
 };
 
