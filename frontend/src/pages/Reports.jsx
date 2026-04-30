@@ -447,14 +447,23 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
         ['PAWIN PYPOS - DAILY SALES REPORT'],
         [`Report Date: ${getFormattedDate()}`],
         [''],
-        ['Receipt #', 'Date & Time', 'Category', 'Item', 'Quantity', 'Unit Price', 'Subtotal']
+        ['Receipt #', 'Date & Time', 'Category', 'Item', 'Quantity', 'Unit Price', 'Subtotal', 'Cost', 'Total Cost', 'Profit', 'Margin']
       ];
 
       const rows = [];
       let grandTotal = 0;
+      let grandProfit = 0;
       
       reportData.dailySales.forEach(sale => {
+        let saleProfit = 0;
         sale.sale_items?.forEach((item, idx) => {
+          const costPrice = parseFloat(item.cost_price || 0);
+          const totalCost = costPrice * item.quantity;
+          const subtotal = parseFloat(item.subtotal || 0);
+          const profit = subtotal - totalCost;
+          const margin = subtotal > 0 ? ((profit / subtotal) * 100).toFixed(1) + '%' : '0%';
+          saleProfit += profit;
+
           rows.push([
             idx === 0 ? `#${String(sale.id).padStart(5, '0')}` : '',
             idx === 0 ? new Date(sale.created_at).toLocaleString() : '',
@@ -462,16 +471,22 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
             item.item_name || '-',
             item.quantity,
             parseFloat(item.unit_price || 0).toFixed(2),
-            parseFloat(item.subtotal || 0).toFixed(2)
+            subtotal.toFixed(2),
+            costPrice.toFixed(2),
+            totalCost.toFixed(2),
+            profit.toFixed(2),
+            margin
           ]);
         });
         grandTotal += parseFloat(sale.final_amount || 0);
+        grandProfit += saleProfit;
       });
 
-      rows.push(['', '', '', '', '', 'GRAND TOTAL:', grandTotal.toFixed(2)]);
+      const totalMargin = grandTotal > 0 ? ((grandProfit / grandTotal) * 100).toFixed(1) + '%' : '0%';
+      rows.push(['', '', '', '', '', 'GRAND TOTAL:', grandTotal.toFixed(2), '', '', grandProfit.toFixed(2), totalMargin]);
       
       const ws = XLSX.utils.aoa_to_sheet([...headers, ...rows]);
-      ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 12 }, { wch: 15 }];
+      ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 10 }];
       XLSX.utils.book_append_sheet(wb, ws, 'Daily Sales');
     }
     
@@ -481,11 +496,12 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
         ['PAWIN PYPOS - MONTHLY SALES REPORT'],
         [`Report Date: ${getFormattedDate()}`],
         [''],
-        ['Receipt #', 'Date & Time', 'Category', 'Item', 'Quantity', 'Unit Price', 'Subtotal']
+        ['Receipt #', 'Date & Time', 'Category', 'Item', 'Quantity', 'Unit Price', 'Subtotal', 'Cost', 'Total Cost', 'Profit', 'Margin']
       ];
 
       const rows = [];
       let grandTotal = 0;
+      let grandProfit = 0;
       
       reportData.monthlySales.forEach(monthData => {
         const monthSales = reportData.dailySales.filter(s => 
@@ -493,10 +509,26 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
         );
         
         if (monthSales.length > 0) {
-          rows.push(['', `--- ${monthData.month} ---`, '', '', '', `Transactions: ${monthData.count}`, `Total: ${monthData.total.toFixed(2)}`]);
+          let monthProfit = 0;
+          monthSales.forEach(sale => {
+            sale.sale_items?.forEach((item) => {
+              const costPrice = parseFloat(item.cost_price || 0);
+              const profit = parseFloat(item.subtotal || 0) - (costPrice * item.quantity);
+              monthProfit += profit;
+            });
+          });
+          const monthMargin = monthData.total > 0 ? ((monthProfit / monthData.total) * 100).toFixed(1) + '%' : '0%';
+
+          rows.push(['', `--- ${monthData.month} ---`, '', '', '', `Transactions: ${monthData.count}`, `Total: ${monthData.total.toFixed(2)}`, '', '', `Profit: ${monthProfit.toFixed(2)}`, monthMargin]);
           
           monthSales.forEach(sale => {
             sale.sale_items?.forEach((item, idx) => {
+              const costPrice = parseFloat(item.cost_price || 0);
+              const totalCost = costPrice * item.quantity;
+              const subtotal = parseFloat(item.subtotal || 0);
+              const profit = subtotal - totalCost;
+              const margin = subtotal > 0 ? ((profit / subtotal) * 100).toFixed(1) + '%' : '0%';
+
               rows.push([
                 idx === 0 ? `#${String(sale.id).padStart(5, '0')}` : '',
                 idx === 0 ? new Date(sale.created_at).toLocaleString() : '',
@@ -504,18 +536,24 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
                 item.item_name || '-',
                 item.quantity,
                 parseFloat(item.unit_price || 0).toFixed(2),
-                parseFloat(item.subtotal || 0).toFixed(2)
+                subtotal.toFixed(2),
+                costPrice.toFixed(2),
+                totalCost.toFixed(2),
+                profit.toFixed(2),
+                margin
               ]);
             });
             grandTotal += parseFloat(sale.final_amount || 0);
           });
+          grandProfit += monthProfit;
         }
       });
 
-      rows.push(['', '', '', '', '', 'GRAND TOTAL:', grandTotal.toFixed(2)]);
+      const totalMargin = grandTotal > 0 ? ((grandProfit / grandTotal) * 100).toFixed(1) + '%' : '0%';
+      rows.push(['', '', '', '', '', 'GRAND TOTAL:', grandTotal.toFixed(2), '', '', grandProfit.toFixed(2), totalMargin]);
       
       const ws = XLSX.utils.aoa_to_sheet([...headers, ...rows]);
-      ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 15 }, { wch: 15 }];
+      ws['!cols'] = [{ wch: 12 }, { wch: 22 }, { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 10 }];
       XLSX.utils.book_append_sheet(wb, ws, 'Monthly Sales');
     }
     
