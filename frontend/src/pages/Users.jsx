@@ -130,62 +130,68 @@ const Users = () => {
   }
 
   return (
-    <div className="row">
+    <div className="row animate-fade-in">
       <div className="col-12">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <div>
-            <h1 className="fs-3 mb-1">User Management</h1>
-            <p className="text-muted mb-0">Manage system users and roles</p>
+            <h1 className="fs-3 fw-bold mb-1" style={{ color: 'var(--gray-900)' }}>Users</h1>
+            <p className="text-muted mb-0 small">Manage system access and roles</p>
           </div>
           <div>
-            <button className="btn btn-primary" onClick={openModal}>
-              <i className="ti ti-plus"></i>
-              Add User
+            <button className="btn btn-primary d-flex align-items-center gap-2 shadow-sm" onClick={openModal}>
+              <i className="ti ti-plus fs-5"></i>
+              Add New User
             </button>
           </div>
         </div>
       </div>
 
       <div className="col-12">
-        <div className="card">
+        <div className="card border-0 shadow-sm overflow-hidden">
           <div className="table-responsive">
-            <table className="table mb-0 text-nowrap table-hover">
-              <thead className="table-light border-light">
+            <table className="table mb-0 text-nowrap table-hover align-middle">
+              <thead className="bg-light">
                 <tr>
-                  <th>User</th>
-                  <th>Email</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th className="text-end">Actions</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">User Profile</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Email Address</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Access Role</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Status</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Joined</th>
+                  <th className="px-4 py-3 text-end border-0"></th>
                 </tr>
               </thead>
               <tbody>
                 {users.map(user => (
-                  <tr key={user.id} className="align-middle">
-                    <td>
+                  <tr key={user.id}>
+                    <td className="px-4 py-3">
                       <div className="d-flex align-items-center gap-3">
-                        <div className="avatar avatar-sm avatar-primary">
-                          <span className="avatar-initials">{getInitials(user.full_name)}</span>
+                        <div className="avatar avatar-md avatar-primary" style={{ backgroundColor: 'rgba(230, 98, 57, 0.1)', color: 'var(--primary)' }}>
+                          <span className="avatar-initials fw-bold">{getInitials(user.full_name)}</span>
                         </div>
-                        <span className="fw-medium">{user.full_name || '-'}</span>
+                        <div>
+                          <div className="fw-bold text-dark">{user.full_name || 'System User'}</div>
+                          <div className="text-muted x-small">ID: {user.id.slice(0, 8)}...</div>
+                        </div>
                       </div>
                     </td>
-                    <td>{user.email}</td>
-                    <td>
+                    <td className="px-4 py-3 text-muted small">{user.email}</td>
+                    <td className="px-4 py-3">
                       {user.role === 'admin' ? (
-                        <span className="badge bg-danger-subtle text-danger border border-danger">Admin</span>
+                        <span className="badge bg-danger-subtle text-danger border-0 px-2 py-1 rounded-pill small">Administrator</span>
                       ) : (
-                        <span className="badge bg-info-subtle text-info border border-info">Staff</span>
+                        <span className="badge bg-info-subtle text-info border-0 px-2 py-1 rounded-pill small">Staff Member</span>
                       )}
                     </td>
-                    <td>
-                      <span className="badge bg-success-subtle text-success border border-success">Active</span>
+                    <td className="px-4 py-3">
+                      <div className="d-flex align-items-center gap-1 text-success small fw-medium">
+                        <span className="nav-dot position-relative d-inline-block" style={{ top: 0, right: 0, transform: 'none' }}></span>
+                        Active
+                      </div>
                     </td>
-                    <td className="small">{new Date(user.created_at).toLocaleDateString()}</td>
-                    <td className="text-end">
+                    <td className="px-4 py-3 text-muted small">{new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                    <td className="px-4 py-3 text-end">
                       <button 
-                        className="btn btn-sm btn-icon btn-light-danger" 
+                        className="btn btn-sm btn-icon border-0 bg-light text-danger hover-up" 
                         onClick={() => handleDelete(user.id)}
                         title="Delete User"
                       >
@@ -197,9 +203,9 @@ const Users = () => {
               </tbody>
             </table>
             {users.length === 0 && (
-              <div className="empty-state py-5">
-                <i className="ti ti-users fs-1 text-muted"></i>
-                <p className="mt-2">No users found</p>
+              <div className="empty-state py-5 text-center">
+                <i className="ti ti-users fs-1 text-muted opacity-25"></i>
+                <p className="mt-2 text-muted fw-medium">No users found</p>
               </div>
             )}
           </div>

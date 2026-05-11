@@ -7,8 +7,9 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
   const { logout, isAdmin, user } = useAuth();
 
   const sections = [
+  const sections = [
     {
-      title: 'Operations',
+      title: null,
       items: [
         { path: isAdmin() ? '/admin' : '/', icon: 'ti-smart-home', label: 'Dashboard' },
         { path: '/pos', icon: 'ti-shopping-cart', label: 'POS', alertPath: '/pos' },
@@ -19,23 +20,25 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
       title: 'Inventory',
       items: [
         { path: '/services', icon: 'ti-printer', label: 'Services', adminOnly: true },
-        { path: '/items', icon: 'ti-box', label: 'Products & Items', adminOnly: true, alertPath: '/items' },
+        { path: '/items', icon: 'ti-box', label: 'Items', adminOnly: true, alertPath: '/items' },
         { path: '/categories', icon: 'ti-tags', label: 'Categories', adminOnly: true },
-        { path: '/stock', icon: 'ti-archive', label: 'Stock Levels', adminOnly: true, alertPath: '/stock' },
+        { path: '/stock', icon: 'ti-archive', label: 'Stock', adminOnly: true, alertPath: '/stock' },
       ]
     },
     {
       title: 'Finance & Sales',
       items: [
-        { path: '/sales', icon: 'ti-receipt', label: 'Sales History' },
-        { path: '/debts', icon: 'ti-wallet', label: 'Debt Records' },
-        { path: '/reports', icon: 'ti-chart-bar', label: 'Financial Reports', adminOnly: true },
+        { path: '/sales', icon: 'ti-receipt', label: 'Sales' },
+        { path: '/debts', icon: 'ti-wallet', label: 'Debt' },
+        { path: '/reports', icon: 'ti-chart-bar', label: 'Reports', adminOnly: true },
       ]
     },
     {
       title: 'System',
       items: [
-        ...(user?.role === 'admin' ? [{ path: '/users', icon: 'ti-users', label: 'Manage Users' }] : []),
+        ...(user?.role === 'admin' ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
+        { path: '/settings', icon: 'ti-settings', label: 'Settings', adminOnly: true },
+        { path: '/account', icon: 'ti-user-circle', label: 'Account' },
       ]
     }
   ];
@@ -64,7 +67,7 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
 
           return (
             <div key={idx} className="nav-section mb-3">
-              {!collapsed && (
+              {section.title && !collapsed && (
                 <div className="nav-section-title px-4 py-2" style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--gray-500)', fontWeight: 700, letterSpacing: '0.1em' }}>
                   {section.title}
                 </div>
@@ -87,16 +90,6 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
       </nav>
 
       <div className="sidebar-footer border-top bg-white py-2">
-        {!collapsed && <div className="nav-section-title px-4 py-2" style={{ fontSize: '0.65rem', textTransform: 'uppercase', color: 'var(--gray-400)', fontWeight: 700, letterSpacing: '0.05em' }}>Settings</div>}
-        <li style={{ listStyle: 'none' }}>
-          <Link
-            to="/account"
-            className={`nav-link ${location.pathname === '/account' ? 'active' : ''}`}
-          >
-            <i className="ti ti-user-circle" style={{ fontSize: '1.1rem' }}></i>
-            <span className="nav-text">Account</span>
-          </Link>
-        </li>
         <li style={{ listStyle: 'none' }}>
           <button className="logout-btn nav-link w-100 border-0 bg-transparent text-start" onClick={logout}>
             <i className="ti ti-logout" style={{ fontSize: '1.1rem' }}></i>
