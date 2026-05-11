@@ -18,6 +18,7 @@ const POS = () => {
   const [lastSale, setLastSale] = useState(null);
   const [addingToCart, setAddingToCart] = useState(null);
   const [showMoreServices, setShowMoreServices] = useState(false);
+  const [showCartModal, setShowCartModal] = useState(false);
 
   // Main services to show first
   const mainServices = ['black & white printing', 'document scanning', 'binding'];
@@ -391,21 +392,32 @@ const POS = () => {
               <i className="ti ti-shopping-cart me-2"></i>
               Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
             </h4>
-            <button 
-              className="btn btn-sm btn-outline-secondary"
-              onClick={clearCart} 
-              disabled={cart.length === 0}
-            >
-              <i className="ti ti-trash"></i>
-              Clear
-            </button>
+            <div className="d-flex gap-2">
+              <button 
+                className="btn btn-sm btn-outline-primary"
+                onClick={() => setShowCartModal(true)} 
+                disabled={cart.length === 0}
+                title="View detailed cart"
+              >
+                <i className="ti ti-list"></i>
+                Show All
+              </button>
+              <button 
+                className="btn btn-sm btn-outline-secondary"
+                onClick={clearCart} 
+                disabled={cart.length === 0}
+              >
+                <i className="ti ti-trash"></i>
+                Clear
+              </button>
+            </div>
           </div>
 
           <div className="pos-cart-items">
             {cart.length === 0 ? (
               <div className="empty-state py-5">
-                <i className="ti ti-shopping-cart fs-1 text-muted"></i>
-                <p className="mt-2 mb-0 text-muted">Cart is empty</p>
+                <i className="ti ti-shopping-cart fs-1 text-muted mb-3"></i>
+                <p className="mb-1 text-muted fw-medium fs-5">Cart is empty</p>
                 <small className="text-muted">Click items to add</small>
               </div>
             ) : (
@@ -450,53 +462,57 @@ const POS = () => {
               </div>
             </div>
 
-            <div className="payment-section mt-3">
-              <div className="mb-2">
-                <label className="form-label small" style={{ color: 'var(--text-primary)' }}>Amount from Customer (TSH)</label>
-                <input
-                  type="number"
-                  className="form-control"
-                  placeholder="Enter amount..."
-                  value={customerPayment}
-                  onChange={(e) => setCustomerPayment(e.target.value)}
-                  min="0"
-                />
-              </div>
-              {customerPayment && parseFloat(customerPayment) >= getTotal() && getTotal() > 0 && (
-                <div className="change-display mb-2 p-2 rounded" style={{ background: 'rgba(0, 201, 81, 0.1)', border: '1px solid var(--success)' }}>
-                  <div className="d-flex justify-content-between align-items-center">
-                    <span style={{ color: 'var(--success)' }}>Change:</span>
-                    <span className="fw-bold" style={{ color: 'var(--success)', fontSize: '1.1rem' }}>
-                      TSH{getChange().toLocaleString()}
-                    </span>
+            {cart.length > 0 && (
+              <>
+                <div className="payment-section mt-3">
+                  <div className="mb-2">
+                    <label className="form-label small" style={{ color: 'var(--text-primary)' }}>Amount from Customer (TSH)</label>
+                    <input
+                      type="number"
+                      className="form-control"
+                      placeholder="Enter amount..."
+                      value={customerPayment}
+                      onChange={(e) => setCustomerPayment(e.target.value)}
+                      min="0"
+                    />
                   </div>
+                  {customerPayment && parseFloat(customerPayment) >= getTotal() && getTotal() > 0 && (
+                    <div className="change-display mb-2 p-2 rounded" style={{ background: 'rgba(0, 201, 81, 0.1)', border: '1px solid var(--success)' }}>
+                      <div className="d-flex justify-content-between align-items-center">
+                        <span style={{ color: 'var(--success)' }}>Change:</span>
+                        <span className="fw-bold" style={{ color: 'var(--success)', fontSize: '1.1rem' }}>
+                          TSH{getChange().toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {customerPayment && parseFloat(customerPayment) < getTotal() && getTotal() > 0 && (
+                    <div className="mb-2 p-2 rounded text-muted small">
+                      <i className="ti ti-info-circle me-1"></i>
+                      Remaining: TSH{(getTotal() - parseFloat(customerPayment)).toLocaleString()}
+                    </div>
+                  )}
                 </div>
-              )}
-              {customerPayment && parseFloat(customerPayment) < getTotal() && getTotal() > 0 && (
-                <div className="mb-2 p-2 rounded text-muted small">
-                  <i className="ti ti-info-circle me-1"></i>
-                  Remaining: TSH{(getTotal() - parseFloat(customerPayment)).toLocaleString()}
-                </div>
-              )}
-            </div>
 
-            <button
-              className="btn btn-primary w-100 mt-2"
-              onClick={handleCheckout}
-              disabled={cart.length === 0 || processing || !canCheckout()}
-            >
-              {processing ? (
-                <>
-                  <span className="spinner-border spinner-border-sm me-2"></span>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <i className="ti ti-credit-card me-2"></i>
-                  Complete Sale
-                </>
-              )}
-            </button>
+                <button
+                  className="btn btn-primary w-100 mt-2"
+                  onClick={handleCheckout}
+                  disabled={cart.length === 0 || processing || !canCheckout()}
+                >
+                  {processing ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2"></span>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <i className="ti ti-credit-card me-2"></i>
+                      Complete Sale
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -604,6 +620,69 @@ const POS = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {showCartModal && (
+        <div className="modal-overlay" onClick={() => setShowCartModal(false)}>
+          <div className="modal" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Cart Items Detailed View</h3>
+              <button onClick={() => setShowCartModal(false)} className="modal-close">
+                <i className="ti ti-x"></i>
+              </button>
+            </div>
+            <div className="modal-body p-0">
+              <div className="table-responsive">
+                <table className="table table-hover mb-0">
+                  <thead className="bg-light">
+                    <tr>
+                      <th className="ps-3">Item</th>
+                      <th className="text-center">Qty</th>
+                      <th className="text-end">Price</th>
+                      <th className="text-end">Subtotal</th>
+                      <th className="text-center pe-3">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {cart.map(item => (
+                      <tr key={item.item_id}>
+                        <td className="ps-3">
+                          <div className="fw-medium">{item.name}</div>
+                          <small className="text-muted">{item.sku}</small>
+                        </td>
+                        <td className="text-center">{item.quantity}</td>
+                        <td className="text-end">TSH {item.unit_price.toLocaleString()}</td>
+                        <td className="text-end fw-bold">TSH {item.subtotal.toLocaleString()}</td>
+                        <td className="text-center pe-3">
+                          <button 
+                            className="btn btn-sm btn-outline-danger p-1"
+                            onClick={() => {
+                              removeFromCart(item.item_id);
+                              if (cart.length <= 1) setShowCartModal(false);
+                            }}
+                            title="Remove from cart"
+                          >
+                            <i className="ti ti-trash"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-light fw-bold">
+                    <tr>
+                      <td colSpan="3" className="text-end ps-3">Total:</td>
+                      <td colSpan="2" className="text-end pe-3 text-primary fs-5">TSH {getTotal().toLocaleString()}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+            <div className="modal-footer">
+              <button onClick={() => setShowCartModal(false)} className="btn btn-primary w-100">
+                OK
+              </button>
             </div>
           </div>
         </div>

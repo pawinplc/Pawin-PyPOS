@@ -2069,8 +2069,13 @@ footer {
   border-radius: 0.75rem;
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: auto;
+  min-height: 400px;
+  max-height: calc(100vh - var(--topbar-height) - 3rem);
   overflow: hidden;
+  position: sticky;
+  top: calc(var(--topbar-height) + 1.5rem);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .pos-cart-header {
@@ -2262,7 +2267,11 @@ footer {
   }
   
   .pos-cart-section {
-    max-height: 400px;
+    position: relative;
+    top: 0;
+    max-height: 500px;
+    height: auto;
+    margin-top: 1.5rem;
   }
   
   .col-lg-3,
