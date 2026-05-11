@@ -19,6 +19,8 @@ const POS = () => {
   const [addingToCart, setAddingToCart] = useState(null);
   const [showMoreServices, setShowMoreServices] = useState(false);
   const [showCartModal, setShowCartModal] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cash');
+  const [customerName, setCustomerName] = useState('');
 
   // Main services to show first
   const mainServices = ['black & white printing', 'document scanning', 'binding'];
@@ -151,6 +153,9 @@ const POS = () => {
   const canCheckout = () => {
     const total = getTotal();
     const payment = parseFloat(customerPayment) || 0;
+    if (paymentMethod === 'debt') {
+      return cart.length > 0 && !!customerName;
+    }
     return cart.length > 0 && payment >= total;
   };
 
@@ -163,8 +168,13 @@ const POS = () => {
     const total = getTotal();
     const payment = parseFloat(customerPayment) || 0;
     
-    if (payment < total) {
+    if (paymentMethod === 'cash' && payment < total) {
       toast.error(`Insufficient payment. Total is TSH ${total.toLocaleString()}`);
+      return;
+    }
+
+    if (paymentMethod === 'debt' && !customerName) {
+      toast.error('Customer name is required for debt sales');
       return;
     }
 
@@ -176,22 +186,41 @@ const POS = () => {
           quantity: item.quantity,
           unit_price: item.unit_price
         })),
-        payment_method: 'cash',
+        payment_method: paymentMethod,
+        customer_name: customerName
       };
 
       const result = await salesAPI.create(saleData);
+      
+      // If it's a debt, create a record in the debts table
+      if (paymentMethod === 'debt') {
+        const { debtsAPI } = await import('../services/supabase');
+        await debtsAPI.create({
+          person_name: customerName,
+          amount: total,
+          remaining_amount: total - payment, // Track partial payments
+          status: (total - payment) <= 0 ? 'paid' : (payment > 0 ? 'partially_paid' : 'pending'),
+          type: 'receivable',
+          description: `Sale #${String(result?.id).padStart(5, '0')}`,
+          sale_id: result?.id
+        });
+      }
       setLastSale({
         id: result?.id,
         items: [...cart],
-        total: getTotal(),
+        total: total,
         payment: payment,
         change: getChange(),
-        date: new Date()
+        date: new Date(),
+        paymentMethod: paymentMethod,
+        customerName: customerName
       });
       setShowReceipt(true);
       toast.success(`Sale completed! Receipt #${String(result?.id).padStart(5, '0')}`);
       setCart([]);
       setCustomerPayment('');
+      setCustomerName('');
+      setPaymentMethod('cash');
       loadData();
     } catch (error) {
       toast.error(error.message || 'Failed to process sale');
@@ -465,18 +494,55 @@ const POS = () => {
             {cart.length > 0 && (
               <>
                 <div className="payment-section mt-3">
-                  <div className="mb-2">
-                    <label className="form-label small" style={{ color: 'var(--text-primary)' }}>Amount from Customer (TSH)</label>
-                    <input
-                      type="number"
-                      className="form-control"
-                      placeholder="Enter amount..."
-                      value={customerPayment}
-                      onChange={(e) => setCustomerPayment(e.target.value)}
-                      min="0"
-                    />
-                  </div>
-                  {customerPayment && parseFloat(customerPayment) >= getTotal() && getTotal() > 0 && (
+              <div className="mb-3">
+                <label className="form-label small" style={{ color: 'var(--text-primary)' }}>Payment Method</label>
+                <div className="d-flex gap-2">
+                  <button 
+                    type="button"
+                    className={`btn btn-sm flex-grow-1 ${paymentMethod === 'cash' ? 'btn-primary' : 'btn-outline-secondary'}`}
+                    onClick={() => setPaymentMethod('cash')}
+                  >
+                    Cash
+                  </button>
+                  <button 
+                    type="button"
+                    className={`btn btn-sm flex-grow-1 ${paymentMethod === 'debt' ? 'btn-danger' : 'btn-outline-secondary'}`}
+                    onClick={() => setPaymentMethod('debt')}
+                  >
+                    Debt
+                  </button>
+                </div>
+              </div>
+
+              {paymentMethod === 'debt' && (
+                <div className="mb-3">
+                  <label className="form-label small" style={{ color: 'var(--text-primary)' }}>Customer Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    placeholder="Enter customer name..."
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    required
+                  />
+                </div>
+              )}
+
+              <div className="mb-2">
+                <label className="form-label small" style={{ color: 'var(--text-primary)' }}>
+                  {paymentMethod === 'debt' ? 'Amount Paid Now (TSH)' : 'Amount from Customer (TSH)'}
+                </label>
+                <input
+                  type="number"
+                  className="form-control"
+                  placeholder="Enter amount..."
+                  value={customerPayment}
+                  onChange={(e) => setCustomerPayment(e.target.value)}
+                  min="0"
+                />
+              </div>
+              
+              {paymentMethod === 'cash' && customerPayment && parseFloat(customerPayment) >= getTotal() && getTotal() > 0 && (
                     <div className="change-display mb-2 p-2 rounded" style={{ background: 'rgba(0, 201, 81, 0.1)', border: '1px solid var(--success)' }}>
                       <div className="d-flex justify-content-between align-items-center">
                         <span style={{ color: 'var(--success)' }}>Change:</span>
@@ -487,7 +553,7 @@ const POS = () => {
                     </div>
                   )}
                   {customerPayment && parseFloat(customerPayment) < getTotal() && getTotal() > 0 && (
-                    <div className="mb-2 p-2 rounded text-muted small">
+                    <div className="mb-2 p-2 rounded small fw-medium" style={{ background: 'rgba(240, 177, 0, 0.1)', border: '1px solid var(--warning)', color: 'var(--warning)' }}>
                       <i className="ti ti-info-circle me-1"></i>
                       Remaining: TSH{(getTotal() - parseFloat(customerPayment)).toLocaleString()}
                     </div>
@@ -546,20 +612,49 @@ const POS = () => {
                 ))}
               </div>
 
-              <div>
+              <div className="border-bottom pb-3 mb-3">
                 <div className="d-flex justify-content-between small mb-1" style={{ color: 'var(--text-primary)' }}>
                   <span>Subtotal:</span>
                   <span>TSH{lastSale.total.toLocaleString()}</span>
                 </div>
                 <div className="d-flex justify-content-between small mb-1" style={{ color: 'var(--text-primary)' }}>
-                  <span>Cash:</span>
-                  <span>TSH{lastSale.payment.toLocaleString()}</span>
+                  <span>Payment Method:</span>
+                  <span className="text-uppercase fw-bold">{lastSale.paymentMethod}</span>
                 </div>
-                <div className="d-flex justify-content-between fw-bold fs-5 mt-2 pt-2 border-top" style={{ color: 'var(--text-primary)' }}>
-                  <span>Change:</span>
-                  <span style={{ color: 'var(--success)' }}>TSH{lastSale.change.toLocaleString()}</span>
-                </div>
+                {lastSale.paymentMethod === 'debt' ? (
+                  <>
+                    <div className="d-flex justify-content-between small mb-1" style={{ color: 'var(--text-primary)' }}>
+                      <span>Customer:</span>
+                      <span className="fw-bold">{lastSale.customerName}</span>
+                    </div>
+                    <div className="d-flex justify-content-between small mb-1" style={{ color: 'var(--text-primary)' }}>
+                      <span>Paid Now:</span>
+                      <span>TSH{lastSale.payment.toLocaleString()}</span>
+                    </div>
+                    <div className="d-flex justify-content-between fw-bold fs-5 mt-2 pt-2 border-top text-danger">
+                      <span>Balance Due:</span>
+                      <span>TSH{(lastSale.total - lastSale.payment).toLocaleString()}</span>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="d-flex justify-content-between small mb-1" style={{ color: 'var(--text-primary)' }}>
+                      <span>Cash:</span>
+                      <span>TSH{lastSale.payment.toLocaleString()}</span>
+                    </div>
+                    <div className="d-flex justify-content-between fw-bold fs-5 mt-2 pt-2 border-top" style={{ color: 'var(--text-primary)' }}>
+                      <span>Change:</span>
+                      <span style={{ color: 'var(--success)' }}>TSH{lastSale.change.toLocaleString()}</span>
+                    </div>
+                  </>
+                )}
               </div>
+
+              {lastSale.paymentMethod === 'debt' && (
+                <div className="text-center p-2 rounded mb-3" style={{ background: '#fff5f5', border: '1px dashed #feb2b2' }}>
+                  <span className="fw-bold text-danger small">*** CREDIT SALE ***</span>
+                </div>
+              )}
 
               <div className="text-center mt-4 pt-3 border-top">
                 <p className="text-muted mb-0 small">Thank you for your purchase!</p>

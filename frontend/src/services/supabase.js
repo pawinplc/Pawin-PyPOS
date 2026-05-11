@@ -424,4 +424,58 @@ export const subscribeToCategories = (callback) => {
   return subscribeToTable('categories', callback);
 };
 
+export const debtsAPI = {
+  async getAll(filters = {}) {
+    let query = supabase.from('debts').select('*').order('created_at', { ascending: false });
+    if (filters.type) query = query.eq('type', filters.type);
+    if (filters.status) query = query.eq('status', filters.status);
+    
+    const { data, error } = await query;
+    if (error) throw error;
+    return data;
+  },
+
+  async create(debtData) {
+    const { data, error } = await supabase
+      .from('debts')
+      .insert([{
+        ...debtData,
+        remaining_amount: debtData.amount,
+        status: 'pending'
+      }])
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  },
+
+  async recordPayment(id, paymentAmount) {
+    const { data: debt } = await supabase.from('debts').select('*').eq('id', id).single();
+    if (!debt) throw new Error('Debt record not found');
+
+    const newRemaining = Math.max(0, debt.remaining_amount - paymentAmount);
+    const newStatus = newRemaining === 0 ? 'paid' : 'partially_paid';
+
+    const { data, error } = await supabase
+      .from('debts')
+      .update({
+        remaining_amount: newRemaining,
+        status: newStatus,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  },
+
+  async delete(id) {
+    const { error } = await supabase.from('debts').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+};
+
 export { supabase as default };

@@ -18,6 +18,7 @@ import Users from './pages/Users';
 import Account from './pages/Account';
 import SalesDetail from './pages/SalesDetail';
 import Analytics from './pages/Analytics';
+import Debts from './pages/Debts';
 import './App.css';
 
 const ProtectedRoute = ({ children }) => {
@@ -67,7 +68,7 @@ const AppRoutes = () => {
           <ProtectedRoute><Layout /></ProtectedRoute>
         )
       }>
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin" element={isAdmin() ? <AdminDashboard /> : <Dashboard />} />
         <Route path="/pos" element={<POS />} />
         <Route path="/sales" element={<Sales />} />
         <Route path="/reports" element={<Reports isAdmin={isAdmin()} />} />
@@ -78,6 +79,7 @@ const AppRoutes = () => {
         <Route path="/users" element={<Users />} />
         <Route path="/account" element={<Account />} />
         <Route path="/analytics" element={<Analytics />} />
+        <Route path="/debts" element={<Debts />} />
         <Route path="/sales/:period" element={<SalesDetail />} />
         <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       </Route>
