@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { useAuth } from '../context/AuthContext';
-import { itemsAPI, salesAPI, subscribeToTable } from '../services/supabase';
+import { itemsAPI, salesAPI, poll } from '../services/api';
 
 const Layout = () => {
   const { user, logout } = useAuth();
@@ -30,16 +30,14 @@ const Layout = () => {
     }
     loadNotifications();
     
-    const unsubItems = subscribeToTable('items', () => loadNotifications());
-    const unsubSales = subscribeToTable('sales', () => loadNotifications());
+    const stopPolling = poll(() => loadNotifications(), 15000);
     
     const handleResize = () => {
       setIsMobile(window.innerWidth <= 992);
     };
     window.addEventListener('resize', handleResize);
     return () => {
-      unsubItems();
-      unsubSales();
+      stopPolling();
       window.removeEventListener('resize', handleResize);
     };
   }, []);

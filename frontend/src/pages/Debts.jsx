@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { debtsAPI } from '../services/supabase';
+import { debtsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const Debts = () => {

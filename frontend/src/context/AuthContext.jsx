@@ -1,100 +1,60 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import supabase from '../services/supabase';
+import { authAPI, setAuthToken } from '../services/api';
 
 const AuthContext = createContext(null);
 
+const TOKEN_KEY = 'pypos_token';
+
 export const AuthProvider = ({ children }) => {
-  console.log('AuthProvider: Mounting...');
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            username: session.user.email?.split('@')[0],
-            role: 'admin',
-            full_name: session.user.user_metadata?.full_name || session.user.email,
-            avatar_url: session.user.user_metadata?.avatar_url || null
-          });
+      const token = localStorage.getItem(TOKEN_KEY);
+      if (token) {
+        setAuthToken(token);
+        try {
+          const currentUser = await authAPI.getCurrentUser();
+          if (currentUser) {
+            setUser({
+              id: currentUser.id,
+              email: currentUser.email,
+              username: currentUser.username,
+              role: currentUser.role,
+              full_name: currentUser.full_name,
+              avatar_url: currentUser.avatar_url || null
+            });
+          } else {
+            localStorage.removeItem(TOKEN_KEY);
+            setAuthToken(null);
+          }
+        } catch (error) {
+          console.error('Auth init error:', error);
+          localStorage.removeItem(TOKEN_KEY);
+          setAuthToken(null);
         }
-      } catch (error) {
-        console.error('Auth init error:', error);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
 
     initAuth();
-
-    try {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            username: session.user.email?.split('@')[0],
-            role: 'admin',
-            full_name: session.user.user_metadata?.full_name || session.user.email,
-            avatar_url: session.user.user_metadata?.avatar_url || null
-          });
-        } else {
-          setUser(null);
-        }
-        setLoading(false);
-      });
-
-      return () => subscription?.unsubscribe();
-    } catch (error) {
-      console.error('Auth subscription error:', error);
-      setLoading(false);
-    }
   }, []);
 
-  const login = async (username, password) => {
+  const login = async (email, password) => {
     try {
-      // Use direct fetch to avoid SDK issues
-      const supabaseUrl = 'https://dbocluzncuhhlrkeggez.supabase.co';
-      const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRib2NsdXpuY3VoaGxya2VnZ2V6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ5Njg2MTQsImV4cCI6MjA5MDU0NDYxNH0.U7GgLVA4BzFh9DVyKoszK_07WQFvF_aot49JcwhtsAU';
-      
-      const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`
-        },
-        body: JSON.stringify({ email: username, password })
-      });
-      
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error_description || err.msg || 'Login failed');
-      }
-      
-      const data = await response.json();
-      
-      // Set session in Supabase client
-      supabase.auth.setSession({
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_in: data.expires_in,
-        expires_at: data.expires_at,
-        token_type: data.token_type,
-        user: data.user
-      });
-      
+      const data = await authAPI.login(email, password);
+      setAuthToken(data.access_token);
+      localStorage.setItem(TOKEN_KEY, data.access_token);
+
+      const currentUser = await authAPI.getCurrentUser();
       const userData = {
-        id: data.user.id,
-        email: data.user.email,
-        username: data.user.email?.split('@')[0],
-        role: 'admin',
-        full_name: data.user.user_metadata?.full_name || data.user.email,
-        avatar_url: data.user.user_metadata?.avatar_url || null
+        id: currentUser.id,
+        email: currentUser.email,
+        username: currentUser.username,
+        role: currentUser.role,
+        full_name: currentUser.full_name,
+        avatar_url: currentUser.avatar_url || null
       };
       setUser(userData);
       return userData;
@@ -106,17 +66,23 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await supabase.auth.signOut();
+      await authAPI.logout();
     } catch (error) {
       console.error('Logout error:', error);
     }
+    setAuthToken(null);
+    localStorage.removeItem(TOKEN_KEY);
     setUser(null);
+  };
+
+  const updatePassword = async (currentPassword, newPassword) => {
+    await authAPI.changePassword(currentPassword, newPassword);
   };
 
   const isAdmin = () => user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, isAdmin, setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updatePassword, isAdmin, setUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { Link } from 'react-router-dom';
-import { salesAPI } from '../services/supabase';
+import { salesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const SalesDetail = () => {

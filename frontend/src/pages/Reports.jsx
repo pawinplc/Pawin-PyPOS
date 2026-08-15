@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { salesAPI, stockAPI } from '../services/supabase';
+import { salesAPI, stockAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';

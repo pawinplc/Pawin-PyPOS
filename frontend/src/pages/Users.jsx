@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { usersAPI } from '../services/supabase';
+import { usersAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const Users = () => {
@@ -49,17 +49,15 @@ const Users = () => {
 
     try {
       setLoading(true);
-      // For public.users, we generate a password hash if needed, but here we just store it
-      // Note: In a real app, you'd use an Edge Function to create the auth user too
       await usersAPI.create({
         email: formData.email,
         username: formData.email.split('@')[0],
-        password_hash: 'managed_via_console', // Placeholder for now
+        password: formData.password || 'password123',
         full_name: formData.full_name,
         role: formData.role
       });
 
-      toast.success('User added to management table');
+      toast.success('User added successfully');
       closeModal();
       loadUsers();
     } catch (error) {

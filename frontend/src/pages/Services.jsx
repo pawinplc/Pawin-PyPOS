@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { itemsAPI, subscribeToItems } from '../services/supabase';
+import { itemsAPI, poll } from '../services/api';
 import toast from 'react-hot-toast';
 
 const Services = ({ isAdmin = false }) => {
@@ -13,18 +13,10 @@ const Services = ({ isAdmin = false }) => {
   useEffect(() => {
     loadServices();
     
-    let unsubscribe;
-    try {
-      unsubscribe = subscribeToItems(() => loadServices());
-    } catch (error) {
-      console.warn('Realtime disabled:', error.message);
-    }
-    
-    const interval = setInterval(() => loadServices(), 10000);
+    const stopPolling = poll(() => loadServices(), 15000);
     
     return () => {
-      if (unsubscribe) unsubscribe();
-      clearInterval(interval);
+      stopPolling();
     };
   }, []);
 

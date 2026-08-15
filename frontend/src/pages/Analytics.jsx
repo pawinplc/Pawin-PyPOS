@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { salesAPI, itemsAPI, categoriesAPI, stockAPI } from '../services/supabase';
+import { salesAPI, itemsAPI, categoriesAPI, stockAPI } from '../services/api';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend } from 'recharts';
 import toast from 'react-hot-toast';
 

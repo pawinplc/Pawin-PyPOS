@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, Boolean, DECIMAL, ForeignKey, TIMESTAMP, DateTime
+from sqlalchemy import Column, Integer, String, Text, Boolean, DECIMAL, ForeignKey, TIMESTAMP, DateTime, Date
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.database import Base
@@ -8,9 +8,11 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
+    email = Column(String(150), unique=True, index=True)
     password_hash = Column(String(255), nullable=False)
     full_name = Column(String(100))
     role = Column(String(20), default='staff')
+    avatar_url = Column(String(500))
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
@@ -39,6 +41,8 @@ class Item(Base):
     min_stock_level = Column(Integer, default=5)
     barcode = Column(String(50))
     is_active = Column(Boolean, default=True)
+    is_service = Column(Boolean, default=False)
+    image_url = Column(String(500))
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
@@ -89,3 +93,18 @@ class SaleItem(Base):
 
     sale = relationship("Sale", back_populates="sale_items")
     item = relationship("Item", back_populates="sale_items")
+
+class Debt(Base):
+    __tablename__ = "debts"
+
+    id = Column(Integer, primary_key=True, index=True)
+    person_name = Column(String(100), nullable=False)
+    phone_number = Column(String(50))
+    type = Column(String(20), default='receivable', nullable=False)
+    amount = Column(DECIMAL(10,2), default=0.00, nullable=False)
+    remaining_amount = Column(DECIMAL(10,2), default=0.00, nullable=False)
+    status = Column(String(20), default='pending', nullable=False)
+    description = Column(Text)
+    due_date = Column(Date)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())

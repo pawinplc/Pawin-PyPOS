@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { dashboardAPI } from '../services/supabase';
+import { dashboardAPI } from '../services/api';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState({

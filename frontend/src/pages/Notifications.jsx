@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { itemsAPI, salesAPI } from '../services/supabase';
+import { itemsAPI, salesAPI } from '../services/api';
 import { getCurrentTimestamp, getRelativeTime } from '../utils/timeUtils';
 import toast from 'react-hot-toast';
 

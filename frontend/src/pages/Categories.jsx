@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { categoriesAPI, subscribeToCategories } from '../services/supabase';
+import { categoriesAPI, poll } from '../services/api';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 
@@ -23,18 +23,10 @@ const Categories = ({ isAdmin = false }) => {
   useEffect(() => {
     loadCategories();
     
-    let unsubscribe;
-    try {
-      unsubscribe = subscribeToCategories(() => loadCategories());
-    } catch (error) {
-      console.warn('Realtime disabled:', error.message);
-    }
-    
-    const interval = setInterval(() => loadCategories(true), 10000);
+    const stopPolling = poll(() => loadCategories(true), 15000);
     
     return () => {
-      if (unsubscribe) unsubscribe();
-      clearInterval(interval);
+      stopPolling();
     };
   }, []);
 

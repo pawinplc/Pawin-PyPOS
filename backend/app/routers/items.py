@@ -24,6 +24,8 @@ def item_to_response(item: Item) -> dict:
         "min_stock_level": item.min_stock_level,
         "barcode": item.barcode,
         "is_active": item.is_active,
+        "is_service": item.is_service,
+        "image_url": item.image_url,
         "created_at": item.created_at,
         "category_name": category_name,
         "is_low_stock": is_low_stock

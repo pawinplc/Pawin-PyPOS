@@ -1,14 +1,18 @@
 from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models.models import User
-from app.schemas.schemas import Token, UserCreate, UserResponse
+from app.schemas.schemas import Token, UserCreate, UserResponse, UserUpdate, LoginRequest
+from app.routers.auth_helpers import (
+    verify_password, get_password_hash, create_access_token,
+    get_current_user, get_current_active_user
+)
 
 SECRET_KEY = "pypos-secret-key-change-in-production-2024"
 ALGORITHM = "HS256"
@@ -19,57 +23,20 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
-    return encoded_jwt
-
-def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
-    user = db.query(User).filter(User.username == username).first()
-    if user is None:
-        raise credentials_exception
-    return user
-
-def get_current_active_user(current_user: User = Depends(get_current_user)):
-    if not current_user.is_active:
-        raise HTTPException(status_code=400, detail="Inactive user")
-    return current_user
-
 @router.post("/login", response_model=Token)
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password_hash):
+def login(credentials: LoginRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == credentials.email).first()
+    if not user:
+        user = db.query(User).filter(User.username == credentials.email).first()
+    if not user or not verify_password(credentials.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
-    
+
     access_token = create_access_token(data={"sub": user.username})
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -81,14 +48,20 @@ def get_me(current_user: User = Depends(get_current_active_user)):
 def register(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admin can create users")
-    
+
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
         raise HTTPException(status_code=400, detail="Username already exists")
-    
+
+    if user.email:
+        db_email = db.query(User).filter(User.email == user.email).first()
+        if db_email:
+            raise HTTPException(status_code=400, detail="Email already exists")
+
     hashed_password = get_password_hash(user.password)
     db_user = User(
         username=user.username,
+        email=user.email,
         password_hash=hashed_password,
         full_name=user.full_name,
         role=user.role
@@ -103,3 +76,52 @@ def get_users(db: Session = Depends(get_db), current_user: User = Depends(get_cu
     if current_user.role != "admin":
         raise HTTPException(status_code=403, detail="Only admin can view users")
     return db.query(User).all()
+
+@router.put("/users/{user_id}", response_model=UserResponse)
+def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can update users")
+
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    update_data = user.model_dump(exclude_unset=True)
+    if "password" in update_data and update_data["password"]:
+        update_data["password_hash"] = get_password_hash(update_data.pop("password"))
+
+    for key, value in update_data.items():
+        setattr(db_user, key, value)
+
+    db.commit()
+    db.refresh(db_user)
+    return db_user
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can delete users")
+
+    db_user = db.query(User).filter(User.id == user_id).first()
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if db_user.id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot delete your own account")
+
+    db.delete(db_user)
+    db.commit()
+    return {"message": "User deleted"}
+
+@router.post("/change-password")
+def change_password(
+    old_password: str,
+    new_password: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if not verify_password(old_password, current_user.password_hash):
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+
+    current_user.password_hash = get_password_hash(new_password)
+    db.commit()
+    return {"message": "Password updated"}

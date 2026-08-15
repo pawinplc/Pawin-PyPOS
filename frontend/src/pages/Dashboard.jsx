@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { dashboardAPI } from '../services/supabase';
+import { dashboardAPI } from '../services/api';
 
 const Dashboard = () => {
   const [stats, setStats] = useState({ total_items: 0, low_stock_items: 0, today_sales: 0, today_transactions: 0 });

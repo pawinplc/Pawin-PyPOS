@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { itemsAPI, categoriesAPI, subscribeToItems } from '../services/supabase';
+import { itemsAPI, categoriesAPI, poll } from '../services/api';
 import * as XLSX from 'xlsx';
 import toast from 'react-hot-toast';
 
@@ -31,18 +31,10 @@ const Items = ({ isAdmin = false }) => {
   useEffect(() => {
     loadData();
     
-    let unsubscribe;
-    try {
-      unsubscribe = subscribeToItems(() => loadData());
-    } catch (error) {
-      console.warn('Realtime disabled:', error.message);
-    }
-    
-    const interval = setInterval(() => loadData(true), 10000);
+    const stopPolling = poll(() => loadData(true), 15000);
     
     return () => {
-      if (unsubscribe) unsubscribe();
-      clearInterval(interval);
+      stopPolling();
     };
   }, [search, categoryFilter]);
 
@@ -109,7 +101,8 @@ const Items = ({ isAdmin = false }) => {
     
     setImageUploading(true);
     try {
-      const imageUrl = await itemsAPI.uploadImage(file);
+      const data = await itemsAPI.uploadImage(file);
+      const imageUrl = itemsAPI.getImageUrl(data.url);
       setFormData({ ...formData, image_url: imageUrl });
       toast.success('Image uploaded');
     } catch (error) {

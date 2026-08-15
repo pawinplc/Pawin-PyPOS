@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { itemsAPI, salesAPI, categoriesAPI } from '../services/supabase';
+import { itemsAPI, salesAPI, categoriesAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
@@ -194,15 +194,12 @@ const POS = () => {
       
       // If it's a debt, create a record in the debts table
       if (paymentMethod === 'debt') {
-        const { debtsAPI } = await import('../services/supabase');
+        const { debtsAPI } = await import('../services/api');
         await debtsAPI.create({
           person_name: customerName,
           amount: total,
-          remaining_amount: total - payment, // Track partial payments
-          status: (total - payment) <= 0 ? 'paid' : (payment > 0 ? 'partially_paid' : 'pending'),
-          type: 'receivable',
           description: `Sale #${String(result?.id).padStart(5, '0')}`,
-          sale_id: result?.id
+          type: 'receivable'
         });
       }
       setLastSale({

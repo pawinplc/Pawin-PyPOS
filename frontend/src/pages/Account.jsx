@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
-import supabase from '../services/supabase';
+import { itemsAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const Account = () => {
@@ -23,22 +23,12 @@ const Account = () => {
 
     setUploading(true);
     try {
-      const fileName = `avatar-${user.id}-${Date.now()}.jpg`;
-      const { data, error } = await supabase.storage
-        .from('item-images')
-        .upload(fileName, file);
-      
-      if (error) throw error;
-      
-      const { data: urlData } = supabase.storage
-        .from('item-images')
-        .getPublicUrl(fileName);
-      
-      const avatarUrl = urlData.publicUrl;
-      
+      const data = await itemsAPI.uploadImage(file);
+      const avatarUrl = itemsAPI.getImageUrl(data.url);
+
       // Update user context with new avatar
       setUser({ ...user, avatar_url: avatarUrl });
-      
+
       toast.success('Profile picture updated!');
     } catch (error) {
       toast.error('Failed to upload image');
@@ -62,7 +52,7 @@ const Account = () => {
 
     setLoading(true);
     try {
-      await updatePassword(newPassword);
+      await updatePassword(currentPassword, newPassword);
       toast.success('Password updated successfully');
       setCurrentPassword('');
       setNewPassword('');
@@ -160,6 +150,17 @@ const Account = () => {
           <div className="card-body">
             <form onSubmit={handlePasswordChange}>
               <div className="mb-3">
+                <label className="form-label">Current Password</label>
+                <input
+                  type="password"
+                  className="form-control"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  required
+                />
+              </div>
+              <div className="mb-3">
                 <label className="form-label">New Password</label>
                 <input
                   type="password"
@@ -203,7 +204,7 @@ const Account = () => {
           <div className="card-body">
             <p className="mb-1"><strong>Pawin PyPOS</strong> - Stationery Inventory & POS System</p>
             <p className="mb-1 text-muted small">Version 1.0.0</p>
-            <p className="mb-0 text-muted small">Built with React + Supabase</p>
+            <p className="mb-0 text-muted small">Built with React + FastAPI</p>
           </div>
         </div>
       </div>

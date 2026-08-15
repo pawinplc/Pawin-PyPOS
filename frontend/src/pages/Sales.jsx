@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { salesAPI, subscribeToSales } from '../services/supabase';
+import { salesAPI, poll } from '../services/api';
 import toast from 'react-hot-toast';
 
 const Sales = () => {
@@ -13,17 +13,10 @@ const Sales = () => {
   useEffect(() => {
     loadSales();
     
-    // Real-time subscription for sales changes
-    let unsubscribe;
-    try {
-      unsubscribe = subscribeToSales((payload) => {
-        console.log('Sale change detected:', payload);
-        loadSales();
-        toast.success('New sale detected!', { icon: '🔥' });
-      });
-    } catch (error) {
-      console.warn('Realtime disabled:', error.message);
-    }
+    // Poll for sales changes
+    const stopPolling = poll(() => {
+      loadSales();
+    }, 15000);
     
     // Auto-refresh every 10 seconds as backup
     const interval = setInterval(() => {
@@ -31,7 +24,7 @@ const Sales = () => {
     }, 10000);
     
     return () => {
-      if (unsubscribe) unsubscribe();
+      stopPolling();
       clearInterval(interval);
     };
   }, []);
