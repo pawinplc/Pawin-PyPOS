@@ -6,12 +6,13 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
   const location = useLocation();
   const { logout, isAdmin, user } = useAuth();
 
-  const sections = [
+  const isUserAdmin = isAdmin();
+
   const sections = [
     {
       title: null,
       items: [
-        { path: isAdmin() ? '/admin' : '/', icon: 'ti-smart-home', label: 'Dashboard' },
+        { path: isUserAdmin ? '/admin' : '/', icon: 'ti-smart-home', label: 'Dashboard' },
         { path: '/pos', icon: 'ti-shopping-cart', label: 'POS', alertPath: '/pos' },
         { path: '/analytics', icon: 'ti-chart-line', label: 'Analytics' },
       ]
@@ -36,8 +37,8 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
     {
       title: 'System',
       items: [
-        ...(user?.role === 'admin' ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
-        { path: '/settings', icon: 'ti-settings', label: 'Settings', adminOnly: true },
+        ...(isUserAdmin ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
+        { path: '/settings', icon: 'ti-settings', label: 'Settings' },
         { path: '/account', icon: 'ti-user-circle', label: 'Account' },
       ]
     }
@@ -60,7 +61,7 @@ const Sidebar = ({ collapsed, alertCount = 0, isMobile = false, mobileOpen = fal
         <span className="logo-text fw-bold ms-2">Pawin PyPOS</span>
       </div>
 
-      <nav className="nav">
+      <nav className="nav" style={{ overflowY: 'auto', flex: 1 }}>
         {sections.map((section, idx) => {
           const visibleItems = section.items.filter(item => !item.adminOnly || isAdmin());
           if (visibleItems.length === 0) return null;
