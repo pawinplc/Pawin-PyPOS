@@ -1,13 +1,13 @@
 from datetime import datetime, timedelta
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import User
+from app.models.models import User, UserActivity
 from app.schemas.schemas import Token, UserCreate, UserResponse, UserUpdate, LoginRequest
 from app.routers.auth_helpers import (
     verify_password, get_password_hash, create_access_token,
@@ -23,8 +23,22 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
+def record_activity(db: Session, user: User, action: str, request: Request):
+    try:
+        ip_address = request.client.host if request.client else None
+        user_agent = request.headers.get("user-agent")
+        db.add(UserActivity(
+            user_id=user.id,
+            action=action,
+            ip_address=ip_address,
+            user_agent=user_agent
+        ))
+        db.commit()
+    except Exception:
+        db.rollback()
+
 @router.post("/login", response_model=Token)
-def login(credentials: LoginRequest, db: Session = Depends(get_db)):
+def login(credentials: LoginRequest, request: Request, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == credentials.email).first()
     if not user:
         user = db.query(User).filter(User.username == credentials.email).first()
@@ -38,7 +52,13 @@ def login(credentials: LoginRequest, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Inactive user")
 
     access_token = create_access_token(data={"sub": user.username})
+    record_activity(db, user, "login", request)
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/logout")
+def logout(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    record_activity(db, current_user, "logout", request)
+    return {"message": "Logged out"}
 
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: User = Depends(get_current_active_user)):

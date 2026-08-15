@@ -17,6 +17,7 @@ class PaymentMethod(str, Enum):
     cash = "cash"
     card = "card"
     other = "other"
+    debt = "debt"
 
 class DebtType(str, Enum):
     receivable = "receivable"
@@ -228,3 +229,17 @@ class ReportFilter(BaseModel):
 class StockArrivalFilter(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
+
+class AuditEntry(BaseModel):
+    id: int
+    type: str
+    action: str
+    description: str
+    amount: Optional[Decimal] = None
+    user_id: Optional[int] = None
+    username: Optional[str] = None
+    created_at: datetime
+
+class AuditLogResponse(BaseModel):
+    entries: List[AuditEntry]
+    total: int

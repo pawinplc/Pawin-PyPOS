@@ -24,10 +24,7 @@ const Layout = () => {
       setDarkMode(true);
       document.documentElement.setAttribute('data-theme', 'dark');
     }
-    const savedSidebar = localStorage.getItem('sidebarCollapsed');
-    if (savedSidebar === 'true') {
-      setSidebarCollapsed(true);
-    }
+    localStorage.setItem('sidebarCollapsed', 'false');
     loadNotifications();
     
     const stopPolling = poll(() => loadNotifications(), 15000);
@@ -355,8 +352,8 @@ const Layout = () => {
                     <span>Home</span>
                   </Link>
                   <Link to="/account" className="text-decoration-none">
-                    <i className="ti ti-settings me-2"></i>
-                    <span>Settings</span>
+                    <i className="ti ti-user-circle me-2"></i>
+                    <span>Account</span>
                   </Link>
                   <a href="#!" onClick={(e) => { e.preventDefault(); handleLogout(); }}>
                     <i className="ti ti-logout me-2"></i>

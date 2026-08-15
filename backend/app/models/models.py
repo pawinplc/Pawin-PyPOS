@@ -94,6 +94,18 @@ class SaleItem(Base):
     sale = relationship("Sale", back_populates="sale_items")
     item = relationship("Item", back_populates="sale_items")
 
+class UserActivity(Base):
+    __tablename__ = "user_activity"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    action = Column(String(50), nullable=False)
+    ip_address = Column(String(50))
+    user_agent = Column(String(500))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    user = relationship("User")
+
 class Debt(Base):
     __tablename__ = "debts"
 

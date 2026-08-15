@@ -66,7 +66,11 @@ export const authAPI = {
   },
 
   async logout() {
-    // Stateless JWT - nothing to do server-side
+    try {
+      await request('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // ignore - token is cleared client-side regardless
+    }
   },
 
   async changePassword(oldPassword, newPassword) {
@@ -244,6 +248,16 @@ export const debtsAPI = {
 
   async delete(id) {
     return request(`/api/debts/${id}`, { method: 'DELETE' });
+  },
+};
+
+export const auditAPI = {
+  async getLogs(type, limit = 200) {
+    const query = new URLSearchParams();
+    if (type) query.set('type', type);
+    if (limit) query.set('limit', limit);
+    const qs = query.toString();
+    return request(`/api/audit/logs${qs ? `?${qs}` : ''}`);
   },
 };
 

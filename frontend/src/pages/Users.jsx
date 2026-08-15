@@ -85,6 +85,13 @@ const Users = () => {
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
   };
 
+  const roleCounts = users.reduce((acc, user) => {
+    acc[user.role] = (acc[user.role] || 0) + 1;
+    return acc;
+  }, {});
+  const distinctRoles = Object.keys(roleCounts);
+  const roleLabels = { admin: 'Administrator', staff: 'Staff Member' };
+
   if (loading) {
     return (
       <div className="row">
@@ -144,6 +151,28 @@ const Users = () => {
         </div>
       </div>
 
+      <div className="row g-3 mb-4">
+        <div className="col-12">
+          <div className="card border-0 shadow-sm">
+            <div className="card-body py-3 px-4 d-flex flex-wrap align-items-center gap-3">
+              <div>
+                <span className="text-muted small fw-medium">Roles</span>
+                <div className="fs-5 fw-bold" style={{ color: 'var(--gray-900)' }}>{distinctRoles.length}</div>
+              </div>
+              <div className="vr align-self-stretch d-none d-sm-block"></div>
+              {distinctRoles.map(role => (
+                <div key={role} className="d-flex align-items-center gap-2">
+                  <span className="badge px-3 py-2 rounded-pill small" style={{ background: 'rgba(230, 98, 57, 0.1)', color: 'var(--primary)' }}>
+                    {roleLabels[role] || role}
+                  </span>
+                  <span className="fw-bold" style={{ color: 'var(--gray-900)' }}>{roleCounts[role]}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="col-12">
         <div className="card border-0 shadow-sm overflow-hidden">
           <div className="table-responsive">
@@ -168,7 +197,7 @@ const Users = () => {
                         </div>
                         <div>
                           <div className="fw-bold text-dark">{user.full_name || 'System User'}</div>
-                          <div className="text-muted x-small">ID: {user.id.slice(0, 8)}...</div>
+                          <div className="text-muted x-small">ID: {user.id}</div>
                         </div>
                       </div>
                     </td>
