@@ -1,11 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const Sidebar = ({ alertCount = 0 }) => {
+const Sidebar = ({ alertCount = 0, collapsed = false, onToggle, isMobile = false, mobileOpen = false }) => {
   const location = useLocation();
   const { logout, isAdmin, user } = useAuth();
 
   const isUserAdmin = isAdmin();
+
+  const sidebarWidth = collapsed ? 60 : 240;
 
   const sections = [
     {
@@ -49,8 +51,8 @@ const Sidebar = ({ alertCount = 0 }) => {
   };
 
   const asideStyle = {
-    width: 240,
-    background: '#fff',
+    width: sidebarWidth,
+    background: 'var(--bg-white, #fff)',
     borderRight: '1px solid #e5e7eb',
     height: '100vh',
     position: 'fixed',
@@ -103,7 +105,7 @@ const Sidebar = ({ alertCount = 0 }) => {
     borderRadius: 8,
     fontSize: '0.875rem',
     fontWeight: 400,
-    color: active ? '#e66239' : '#1f2937',
+    color: active ? '#f07045' : 'var(--text-primary, #e5e5e5)',
     background: active ? 'rgba(230, 98, 57, 0.095)' : 'transparent',
     textDecoration: 'none',
     whiteSpace: 'nowrap',
@@ -118,15 +120,19 @@ const Sidebar = ({ alertCount = 0 }) => {
     padding: '6px 0'
   };
 
+  const showLabel = !collapsed;
+
   return (
-    <aside style={asideStyle}>
+    <aside className={`sidebar ${isMobile && mobileOpen ? 'mobile-show' : ''}`} style={asideStyle}>
       <div style={logoStyle}>
         <img
           src={`${import.meta.env.BASE_URL}logo1.png`}
           alt="Pawin PyPOS"
           style={{ width: 32, height: 32, objectFit: 'contain' }}
         />
-        <span style={{ fontWeight: 600, color: '#111827', fontSize: '0.95rem', whiteSpace: 'nowrap' }}>Pawin PyPOS</span>
+        {!collapsed && (
+          <span style={{ fontWeight: 600, color: 'var(--text-primary, #e5e5e5)', fontSize: '0.95rem', whiteSpace: 'nowrap' }}>Pawin PyPOS</span>
+        )}
       </div>
 
       <nav style={navStyle}>
@@ -134,9 +140,10 @@ const Sidebar = ({ alertCount = 0 }) => {
           const visibleItems = section.items.filter(item => !item.adminOnly || isAdmin());
           if (visibleItems.length === 0) return null;
 
+          const showTitle = !collapsed && section.title;
           return (
             <div key={idx} style={sectionStyle}>
-              {section.title && (
+              {showTitle && (
                 <div style={titleStyle}>{section.title}</div>
               )}
               {visibleItems.map((item) => {
@@ -154,9 +161,9 @@ const Sidebar = ({ alertCount = 0 }) => {
                       }}
                     >
                       <i className={`ti ${item.icon}`} style={{ fontSize: '1.1rem', flexShrink: 0 }}></i>
-                      <span>{item.label}</span>
+                      {showLabel && <span>{item.label}</span>}
                       {needsAttention(item) && (
-                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#e66239', marginLeft: 'auto' }}></span>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--primary, #f07045)', marginLeft: 'auto' }}></span>
                       )}
                     </Link>
                   </div>
@@ -179,13 +186,13 @@ const Sidebar = ({ alertCount = 0 }) => {
             background: 'transparent',
             border: 'none',
             textAlign: 'left',
-            color: '#1f2937',
+            color: 'var(--text-primary, #e5e5e5)',
             fontSize: '0.875rem',
             cursor: 'pointer',
             transition: 'color 0.2s'
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = '#e66239'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = '#1f2937'; }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--primary, #f07045)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-primary, #e5e5e5)'; }}
         >
           <i className="ti ti-logout" style={{ fontSize: '1.1rem' }}></i>
           <span>Logout</span>
