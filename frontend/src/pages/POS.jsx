@@ -19,6 +19,7 @@ const POS = () => {
   const [addingToCart, setAddingToCart] = useState(null);
   const [showMoreServices, setShowMoreServices] = useState(false);
   const [showCartModal, setShowCartModal] = useState(false);
+  const [mobileCartOpen, setMobileCartOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [customerName, setCustomerName] = useState('');
 
@@ -138,6 +139,7 @@ const POS = () => {
   const clearCart = () => {
     setCart([]);
     setCustomerPayment('');
+    setMobileCartOpen(false);
   };
 
   const getTotal = () => {
@@ -213,6 +215,7 @@ const POS = () => {
         customerName: customerName
       });
       setShowReceipt(true);
+      setMobileCartOpen(false);
       toast.success(`Sale completed! Receipt #${String(result?.id).padStart(5, '0')}`);
       setCart([]);
       setCustomerPayment('');
@@ -234,39 +237,85 @@ const POS = () => {
   if (loading) {
     return (
       <div className="row">
-        <div className="col-12 mb-4">
-          <div className="skeleton" style={{ width: 120, height: 28, marginBottom: 8 }}></div>
-          <div className="skeleton" style={{ width: 180, height: 18 }}></div>
+        <div className="col-12">
+          <div className="mb-4">
+            <div className="skeleton" style={{ width: 160, height: 28, marginBottom: 8 }}></div>
+            <div className="skeleton" style={{ width: 200, height: 16 }}></div>
+          </div>
         </div>
-        <div className="col-lg-8">
-          <div className="card">
-            <div className="card-header">
-              <div className="skeleton" style={{ width: 100, height: 20 }}></div>
+
+        <div className="col-lg-6">
+          {/* Stationery Services skeleton */}
+          <div className="card mb-4">
+            <div className="card-header bg-white">
+              <div className="skeleton" style={{ width: 180, height: 20 }}></div>
             </div>
-            <div className="card-body">
-              <div className="row g-2">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="col-4 col-md-3">
-                    <div className="card p-3 text-center">
-                      <div className="skeleton mx-auto mb-2" style={{ width: 40, height: 40, borderRadius: 8 }}></div>
-                      <div className="skeleton" style={{ width: '80%', height: 14, margin: '0 auto 4px' }}></div>
-                      <div className="skeleton" style={{ width: '50%', height: 16, margin: '0 auto' }}></div>
-                    </div>
-                  </div>
+            <div className="card-body p-3">
+              <div className="d-flex gap-2 justify-content-start flex-wrap">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="skeleton"
+                    style={{ width: 120, height: 80, borderRadius: 8, flex: '1', maxWidth: 160 }}
+                  ></div>
                 ))}
+                <div className="skeleton" style={{ width: 80, height: 80, borderRadius: 8, maxWidth: 120 }}></div>
               </div>
             </div>
           </div>
-        </div>
-        <div className="col-lg-4">
-          <div className="card">
-            <div className="card-header">
-              <div className="skeleton" style={{ width: 80, height: 20 }}></div>
-            </div>
+
+          {/* Search + category skeleton */}
+          <div className="card mb-4">
             <div className="card-body p-3">
-              <div className="skeleton" style={{ width: '100%', height: 60, marginBottom: 8 }}></div>
-              <div className="skeleton" style={{ width: '60%', height: 18, marginBottom: 4 }}></div>
-              <div className="skeleton" style={{ width: '40%', height: 24 }}></div>
+              <div className="d-flex gap-2 flex-wrap justify-content-between mb-3">
+                <div className="skeleton" style={{ width: 300, maxWidth: '100%', height: 38, borderRadius: 8 }}></div>
+                <div className="skeleton" style={{ width: 150, height: 38, borderRadius: 8 }}></div>
+              </div>
+            </div>
+          </div>
+
+          {/* Items grid skeleton */}
+          <div className="pos-items-grid">
+            {[...Array(12)].map((_, i) => (
+              <div key={i} className="pos-item-card">
+                <div className="skeleton" style={{ width: '85%', height: 12, marginBottom: 8 }}></div>
+                <div className="skeleton" style={{ width: '55%', height: 14, marginBottom: 6 }}></div>
+                <div className="skeleton" style={{ width: '40%', height: 10 }}></div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="col-lg-6 pos-cart-col">
+          <div className="pos-cart-section">
+            <div className="pos-cart-header">
+              <div className="skeleton" style={{ width: 110, height: 22 }}></div>
+              <div className="d-flex gap-2">
+                <div className="skeleton" style={{ width: 76, height: 30, borderRadius: 6 }}></div>
+                <div className="skeleton" style={{ width: 64, height: 30, borderRadius: 6 }}></div>
+              </div>
+            </div>
+
+            <div className="pos-cart-items">
+              <div className="d-flex flex-column align-items-center justify-content-center py-5">
+                <div className="skeleton mb-3" style={{ width: 48, height: 48, borderRadius: '50%' }}></div>
+                <div className="skeleton mb-2" style={{ width: 120, height: 18 }}></div>
+                <div className="skeleton" style={{ width: 90, height: 12 }}></div>
+              </div>
+            </div>
+
+            <div className="pos-cart-footer">
+              <div className="pos-cart-summary">
+                <div className="pos-cart-summary-row">
+                  <div className="skeleton" style={{ width: 90, height: 14 }}></div>
+                  <div className="skeleton" style={{ width: 30, height: 14 }}></div>
+                </div>
+                <div className="pos-cart-summary-row total">
+                  <div className="skeleton" style={{ width: 60, height: 20 }}></div>
+                  <div className="skeleton" style={{ width: 90, height: 20 }}></div>
+                </div>
+              </div>
+              <div className="skeleton" style={{ width: '100%', height: 42, borderRadius: 8 }}></div>
             </div>
           </div>
         </div>
@@ -283,7 +332,7 @@ const POS = () => {
         </div>
       </div>
 
-      <div className="col-lg-8">
+      <div className="col-lg-6">
         {serviceItems.length > 0 && (
           <div className="card mb-4">
             <div className="card-header bg-white">
@@ -411,7 +460,7 @@ const POS = () => {
         </div>
       </div>
 
-      <div className="col-lg-4">
+      <div className={`col-lg-6 pos-cart-col ${mobileCartOpen ? 'mobile-open' : ''}`}>
         <div className="pos-cart-section">
           <div className="pos-cart-header">
             <h4 className="mb-0" style={{ color: 'var(--text-primary)' }}>
@@ -419,6 +468,13 @@ const POS = () => {
               Cart ({cart.reduce((sum, item) => sum + item.quantity, 0)})
             </h4>
             <div className="d-flex gap-2">
+              <button
+                className="btn btn-sm btn-outline-secondary pos-cart-close"
+                onClick={() => setMobileCartOpen(false)}
+                title="Close cart"
+              >
+                <i className="ti ti-x"></i>
+              </button>
               <button 
                 className="btn btn-sm btn-outline-primary"
                 onClick={() => setShowCartModal(true)} 
@@ -579,6 +635,24 @@ const POS = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile floating cart button + backdrop */}
+      <button
+        type="button"
+        className={`pos-cart-fab ${mobileCartOpen ? 'is-open' : ''}`}
+        onClick={() => setMobileCartOpen(true)}
+        aria-label="Open cart"
+      >
+        <i className="ti ti-shopping-cart"></i>
+        <span className="pos-cart-fab-badge">
+          {cart.reduce((sum, item) => sum + item.quantity, 0)}
+        </span>
+        <span className="pos-cart-fab-total">TSH{getTotal().toLocaleString()}</span>
+      </button>
+      <div
+        className={`pos-cart-backdrop ${mobileCartOpen ? 'open' : ''}`}
+        onClick={() => setMobileCartOpen(false)}
+      />
 
       {showReceipt && lastSale && (
         <div className="modal-overlay" onClick={closeReceipt}>
