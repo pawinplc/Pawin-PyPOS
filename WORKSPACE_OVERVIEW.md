@@ -9,8 +9,7 @@ Pawin-PyPOS-Desktop/    # JavaFX Desktop Application (Standalone)
 Pawin-PyPOS/            # Web & Backend Repository
 ├── frontend/           # React + Vite Web Application
 ├── backend/            # FastAPI (Python) - Legacy Service
-├── database/           # SQL Scripts
-└── inapp-1.0.0/        # Supplementary project
+└── database/           # SQL Scripts
 ```
 
 ---
@@ -20,9 +19,8 @@ Pawin-PyPOS/            # Web & Backend Repository
 The core of the system, designed for standard browser-based operations.
 
 *   **Tech Stack**: React 19, Vite, React Router 7 (HashRouter), Supabase JS Client.
-*   **Deployment**: 
-    *   **Live Demo**: [Vercel](https://pawin-pypos.vercel.app)
-    *   **GitHub Pages**: [Automated via GH Actions](https://pawinplc.github.io/Pawin-PyPOS/)
+*   **Deployment**:
+    *   **Production**: [pypos.pawinplc.com](https://pypos.pawinplc.com)
 *   **Key Features**:
     *   Full Point of Sale (POS) interface.
     *   Inventory Management with low-stock notifications.
@@ -62,7 +60,7 @@ Powered by **Supabase** (PostgreSQL).
 ```bash
 cd frontend
 npm run dev      # Local development
-npm run deploy   # Deploy to GitHub Pages
+npm run build    # Production build (deploy dist/ to the web root)
 ```
 
 ### Desktop (JavaFX)

@@ -7,12 +7,23 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      release:
+        description: Create or update a draft GitHub release
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
+concurrency:
+  group: tauri-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    name: ${{ matrix.platform }}
     strategy:
       fail-fast: false
       matrix:
@@ -23,34 +34,68 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Linux dependencies (Ubuntu only)
+      - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-22.04'
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf libglib2.0-dev libjavascriptcoregtk-4.1-dev libsoup-3.0-dev
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libxdo-dev \
+            libssl-dev \
+            rpm
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-          cache: 'npm'
+          node-version: 22
+          cache: npm
           cache-dependency-path: tauri-app/package-lock.json
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
+      - name: Cache Rust build
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: tauri-app/src-tauri -> target
+
       - name: Install frontend dependencies
         working-directory: ./tauri-app
-        run: npm install --legacy-peer-deps
+        run: npm ci --legacy-peer-deps
 
-      - name: Build Tauri App
+      # Push to master / manual dispatch without "release": build only and
+      # keep the installers as downloadable workflow artifacts.
+      - name: Build Tauri app (CI)
+        if: ${{ (github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/')) || (github.event_name == 'workflow_dispatch' && !inputs.release) }}
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: ./tauri-app
-          tagName: Pawin-PyPOS-v__VERSION__
-          releaseName: "Pawin PyPOS v__VERSION__"
-          releaseBody: "Automated build of Pawin PyPOS Desktop."
+          uploadWorkflowArtifacts: true
+          workflowArtifactNamePattern: pawin-pypos-[platform]-[arch]-[bundle]
+          uploadUpdaterJson: false
+
+      # Tag push (v*) / manual dispatch with "release": build and publish a
+      # draft GitHub release. The tag must match the version in tauri.conf.json,
+      # or use workflow_dispatch to let the action create v__VERSION__.
+      - name: Build and draft release
+        if: ${{ startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.release) }}
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: ./tauri-app
+          tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || 'v__VERSION__' }}
+          releaseName: ${{ startsWith(github.ref, 'refs/tags/') && format('Pawin PyPOS {0}', github.ref_name) || 'Pawin PyPOS v__VERSION__' }}
+          releaseBody: |
+            Automated build of Pawin PyPOS Desktop.
+
+            **Bundles:** Linux `.deb`/`.rpm` and Windows `.exe`/`.msi` (where available).
           releaseDraft: true
           prerelease: false
+          generateReleaseNotes: true
+          uploadUpdaterJson: false
