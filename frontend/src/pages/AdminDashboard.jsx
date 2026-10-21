@@ -42,7 +42,7 @@ const AdminDashboard = () => {
         dashboardAPI.getRecentSales(10),
         dashboardAPI.getLowStock(10),
         dashboardAPI.getUsersStats(),
-        salesAPI.getAll()
+        salesAPI.getAll(10000)
       ]);
       setStats(statsData || getDefaultStats());
       setRecentSales(salesData || []);

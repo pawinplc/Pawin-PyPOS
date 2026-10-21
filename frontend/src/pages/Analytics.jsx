@@ -26,7 +26,7 @@ const Analytics = () => {
     setError(null);
     try {
       const [salesResult, itemsResult, categoriesResult] = await Promise.all([
-        salesAPI.getAll(),
+        salesAPI.getAll(10000),
         itemsAPI.getAll({}),
         categoriesAPI.getAll()
       ]);

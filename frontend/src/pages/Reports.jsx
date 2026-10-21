@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { salesAPI, stockAPI } from '../services/api';
+import { salesAPI, stockAPI, reportsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
@@ -12,7 +12,8 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
   const [reportData, setReportData] = useState({
     dailySales: [],
     monthlySales: [],
-    stockMovements: []
+    stockMovements: [],
+    allSales: []
   });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -29,7 +30,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
     try {
       if (!isRefresh) setLoading(true);
       const [sales, movements] = await Promise.all([
-        salesAPI.getAll(),
+        salesAPI.getAll(10000),
         stockAPI.getMovements({})
       ]);
 
@@ -54,6 +55,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
 
       setReportData({
         dailySales: dailySales,
+        allSales: sales || [],
         monthlySales: Object.entries(monthlySales).map(([month, data]) => ({
           month,
           ...data
@@ -92,62 +94,6 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
     });
   };
 
-  const exportDailySales = () => {
-    const headers = [
-      ['PAWIN PYPOS - DAILY SALES REPORT'],
-      [`Report Date: ${getFormattedDate()}`],
-      [''],
-      ['Receipt #', 'Date & Time', 'Category', 'Item', 'Quantity', 'Unit Price', 'Subtotal', 'Cost', 'Total Cost', 'Profit', 'Margin']
-    ];
-
-    const rows = [];
-    let grandTotal = 0;
-    let grandProfit = 0;
-    
-    reportData.dailySales.forEach(sale => {
-      let saleProfit = 0;
-      sale.sale_items?.forEach((item, idx) => {
-        const costPrice = parseFloat(item.cost_price || 0);
-        const totalCost = costPrice * item.quantity;
-        const subtotal = parseFloat(item.subtotal || 0);
-        const profit = subtotal - totalCost;
-        const margin = subtotal > 0 ? ((profit / subtotal) * 100).toFixed(1) + '%' : '0%';
-        saleProfit += profit;
-
-        rows.push([
-          idx === 0 ? `#${String(sale.id).padStart(5, '0')}` : '',
-          idx === 0 ? new Date(sale.created_at).toLocaleString() : '',
-          item.category_name || '-',
-          item.item_name || '-',
-          item.quantity,
-          parseFloat(item.unit_price || 0).toFixed(2),
-          subtotal.toFixed(2),
-          costPrice.toFixed(2),
-          totalCost.toFixed(2),
-          profit.toFixed(2),
-          margin
-        ]);
-      });
-      grandTotal += parseFloat(sale.final_amount || 0);
-      grandProfit += saleProfit;
-    });
-
-    const totalMargin = grandTotal > 0 ? ((grandProfit / grandTotal) * 100).toFixed(1) + '%' : '0%';
-    rows.push(['', '', '', '', '', 'GRAND TOTAL:', grandTotal.toFixed(2), '', '', grandProfit.toFixed(2), totalMargin]);
-
-    const data = [...headers, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    
-    ws['!cols'] = [
-      { wch: 12 }, { wch: 22 }, { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 10 }
-    ];
-    
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Daily Sales');
-    XLSX.writeFile(wb, `daily_sales_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Daily sales exported!');
-  };
-
   const addBranding = (doc, title) => {
     // Add Logo
     try {
@@ -175,6 +121,19 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
     
     return 45; // Return Y offset where table should start
   };
+
+  const runExport = async (label, action) => {
+    const toastId = toast.loading(`Generating ${label}...`);
+    try {
+      await action();
+      toast.success(`${label} downloaded!`, { id: toastId });
+    } catch (error) {
+      toast.error(error?.message || `Failed to export ${label}`, { id: toastId });
+    }
+  };
+
+  const exportDailySales = () =>
+    runExport('Daily sales Excel', () => reportsAPI.dailySales('excel'));
 
   const exportDailySalesPdf = () => {
     const doc = new jsPDF();
@@ -224,79 +183,8 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
     toast.success('Daily sales PDF exported!');
   };
 
-  const exportMonthlySales = () => {
-    const headers = [
-      ['PAWIN PYPOS - MONTHLY SALES REPORT'],
-      [`Report Date: ${getFormattedDate()}`],
-      [''],
-      ['Receipt #', 'Date & Time', 'Category', 'Item', 'Quantity', 'Unit Price', 'Subtotal', 'Cost', 'Total Cost', 'Profit', 'Margin']
-    ];
-
-    const rows = [];
-    let grandTotal = 0;
-    let grandProfit = 0;
-    
-    reportData.monthlySales.forEach(monthData => {
-      const monthSales = reportData.dailySales.filter(s => 
-        s.created_at && s.created_at.substring(0, 7) === monthData.month
-      );
-      
-      if (monthSales.length > 0) {
-        let monthProfit = 0;
-        monthSales.forEach(sale => {
-          sale.sale_items?.forEach((item) => {
-            const costPrice = parseFloat(item.cost_price || 0);
-            const profit = parseFloat(item.subtotal || 0) - (costPrice * item.quantity);
-            monthProfit += profit;
-          });
-        });
-        const monthMargin = monthData.total > 0 ? ((monthProfit / monthData.total) * 100).toFixed(1) + '%' : '0%';
-
-        rows.push(['', `--- ${monthData.month} ---`, '', '', '', `Transactions: ${monthData.count}`, `Total: ${monthData.total.toFixed(2)}`, '', '', `Profit: ${monthProfit.toFixed(2)}`, monthMargin]);
-        
-        monthSales.forEach(sale => {
-          sale.sale_items?.forEach((item, idx) => {
-            const costPrice = parseFloat(item.cost_price || 0);
-            const totalCost = costPrice * item.quantity;
-            const subtotal = parseFloat(item.subtotal || 0);
-            const profit = subtotal - totalCost;
-            const margin = subtotal > 0 ? ((profit / subtotal) * 100).toFixed(1) + '%' : '0%';
-
-            rows.push([
-              idx === 0 ? `#${String(sale.id).padStart(5, '0')}` : '',
-              idx === 0 ? new Date(sale.created_at).toLocaleString() : '',
-              item.category_name || '-',
-              item.item_name || '-',
-              item.quantity,
-              parseFloat(item.unit_price || 0).toFixed(2),
-              subtotal.toFixed(2),
-              costPrice.toFixed(2),
-              totalCost.toFixed(2),
-              profit.toFixed(2),
-              margin
-            ]);
-          });
-          grandTotal += parseFloat(sale.final_amount || 0);
-        });
-        grandProfit += monthProfit;
-      }
-    });
-
-    const totalMargin = grandTotal > 0 ? ((grandProfit / grandTotal) * 100).toFixed(1) + '%' : '0%';
-    rows.push(['', '', '', '', '', 'GRAND TOTAL:', grandTotal.toFixed(2), '', '', grandProfit.toFixed(2), totalMargin]);
-
-    const data = [...headers, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    
-    ws['!cols'] = [
-      { wch: 12 }, { wch: 22 }, { wch: 20 }, { wch: 25 }, { wch: 10 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 15 }, { wch: 10 }
-    ];
-    
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Monthly Sales');
-    XLSX.writeFile(wb, `monthly_sales_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Monthly sales exported!');
-  };
+  const exportMonthlySales = () =>
+    runExport('Monthly sales Excel', () => reportsAPI.monthlySales('excel'));
 
   const exportMonthlySalesPdf = () => {
     const doc = new jsPDF();
@@ -307,7 +195,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
     let grandProfit = 0;
     
     reportData.monthlySales.forEach(monthData => {
-      const monthSales = reportData.dailySales.filter(s => 
+      const monthSales = reportData.allSales.filter(s => 
         s.created_at && s.created_at.substring(0, 7) === monthData.month
       );
       
@@ -369,44 +257,8 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
     toast.success('Monthly sales PDF exported!');
   };
 
-  const exportStockArrivals = () => {
-    const headers = [
-      ['PAWIN PYPOS - STOCK ARRIVALS REPORT'],
-      [`Report Date: ${getFormattedDate()}`],
-      [''],
-      ['#', 'Date', 'Item', 'Category', 'Quantity', 'Reference', 'Notes']
-    ];
-
-    const rows = reportData.stockMovements.map((m, index) => [
-      index + 1,
-      new Date(m.created_at).toLocaleString(),
-      m.item_name || '-',
-      m.category_name || '-',
-      m.quantity,
-      m.reference || '-',
-      m.notes || '-'
-    ]);
-
-    rows.push(['', '', '', '', totalArrivals, '', 'TOTAL ITEMS RECEIVED']);
-
-    const data = [...headers, ...rows];
-    const ws = XLSX.utils.aoa_to_sheet(data);
-    
-    ws['!cols'] = [
-      { wch: 5 },
-      { wch: 22 },
-      { wch: 25 },
-      { wch: 20 },
-      { wch: 10 },
-      { wch: 20 },
-      { wch: 25 }
-    ];
-    
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Stock Arrivals');
-    XLSX.writeFile(wb, `stock_arrivals_${new Date().toISOString().split('T')[0]}.xlsx`);
-    toast.success('Stock arrivals exported!');
-  };
+  const exportStockArrivals = () =>
+    runExport('Stock arrivals Excel', () => reportsAPI.stockArrivals('excel'));
 
   const exportStockArrivalsPdf = () => {
     const doc = new jsPDF();
@@ -504,7 +356,7 @@ const Reports = ({ isAdmin: propIsAdmin }) => {
       let grandProfit = 0;
       
       reportData.monthlySales.forEach(monthData => {
-        const monthSales = reportData.dailySales.filter(s => 
+        const monthSales = reportData.allSales.filter(s => 
           s.created_at && s.created_at.substring(0, 7) === monthData.month
         );
         

@@ -162,8 +162,8 @@ export const stockAPI = {
 };
 
 export const salesAPI = {
-  async getAll() {
-    return request('/api/sales?limit=100');
+  async getAll(limit = 100) {
+    return request(`/api/sales?limit=${limit}`);
   },
 
   async create(saleData) {
@@ -258,6 +258,82 @@ export const auditAPI = {
     if (limit) query.set('limit', limit);
     const qs = query.toString();
     return request(`/api/audit/logs${qs ? `?${qs}` : ''}`);
+  },
+};
+
+const downloadFile = async (path, fallbackName) => {
+  const headers = {};
+  if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+
+  const response = await fetch(`${API_URL}${path}`, { headers });
+
+  if (!response.ok) {
+    let message = `Download failed: ${response.status}`;
+    try {
+      const err = await response.json();
+      message = err.detail || err.message || message;
+    } catch {
+      // ignore parse errors
+    }
+    throw new Error(message);
+  }
+
+  const blob = await response.blob();
+  const disposition = response.headers.get('content-disposition') || '';
+  const match = disposition.match(/filename="?([^";]+)"?/i);
+  const filename = match ? match[1] : fallbackName;
+
+  const url = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(url);
+
+  return filename;
+};
+
+const todayISO = () => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+};
+
+export const reportsAPI = {
+  async dailySales(format = 'excel', date = null) {
+    const ext = format === 'pdf' ? 'pdf' : 'xlsx';
+    const targetDate = date || todayISO();
+    return downloadFile(
+      `/api/reports/daily-sales/${format}?date=${targetDate}`,
+      `daily_sales_${targetDate}.${ext}`
+    );
+  },
+
+  async monthlySales(format = 'excel', { year, month } = {}) {
+    const ext = format === 'pdf' ? 'pdf' : 'xlsx';
+    const params = new URLSearchParams();
+    if (year) params.set('year', year);
+    if (month) params.set('month', month);
+    const qs = params.toString();
+    const fallback = year && month
+      ? `monthly_sales_${year}_${String(month).padStart(2, '0')}.${ext}`
+      : `monthly_sales_all.${ext}`;
+    return downloadFile(`/api/reports/monthly-sales/${format}${qs ? `?${qs}` : ''}`, fallback);
+  },
+
+  async stockArrivals(format = 'excel', { startDate, endDate } = {}) {
+    const ext = format === 'pdf' ? 'pdf' : 'xlsx';
+    const params = new URLSearchParams();
+    if (startDate) params.set('start_date', startDate);
+    if (endDate) params.set('end_date', endDate);
+    const qs = params.toString();
+    return downloadFile(
+      `/api/reports/stock-arrival/${format}${qs ? `?${qs}` : ''}`,
+      `stock_arrivals_${todayISO()}.${ext}`
+    );
   },
 };
 
