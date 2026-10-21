@@ -8,7 +8,7 @@ from app.routers import auth, categories, items, stock, sales, reports, dashboar
 app = FastAPI(
     title="PyPOS API",
     description="University Stationery Inventory & POS System",
-    version="1.0.0"
+    version="1.1.0.DTCPyPoS"
 )
 
 app.add_middleware(
@@ -38,7 +38,7 @@ app.include_router(audit.router)
 
 @app.get("/")
 def root():
-    return {"message": "PyPOS API - University Stationery System", "version": "1.0.0"}
+    return {"message": "PyPOS API - University Stationery System", "version": "1.1.0.DTCPyPoS"}
 
 @app.get("/health")
 def health_check():

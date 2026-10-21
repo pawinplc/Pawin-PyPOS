@@ -1443,18 +1443,26 @@ img {
   display: flex;
   flex-wrap: wrap;
   margin: -0.75rem;
+  gap: 0;
+  --bs-gutter-x: 0;
+  --bs-gutter-y: 0;
 }
 
 .row>* {
   padding: 0.75rem;
+  margin-top: 0;
 }
 
 .row.g-3 {
   margin: -1rem;
+  gap: 0;
+  --bs-gutter-x: 0;
+  --bs-gutter-y: 0;
 }
 
 .row.g-3>* {
   padding: 1rem;
+  margin-top: 0;
 }
 
 .col {
@@ -5141,5 +5149,49 @@ body {
 
   .glass-card {
     padding: 15px;
+  }
+}
+
+/* Dashboard KPI cards: 1 per row on phones, 2 on tablets, 4 on desktop */
+.dash-stat-col {
+  flex: 0 0 100%;
+  max-width: 100%;
+}
+
+@media (min-width: 576px) {
+  .dash-stat-col {
+    flex: 0 0 50%;
+    max-width: 50%;
+  }
+}
+
+@media (min-width: 1400px) {
+  .dash-stat-col {
+    flex: 0 0 25%;
+    max-width: 25%;
+  }
+
+  .stat-card h3 {
+    font-size: 1.3rem;
+  }
+}
+
+.stat-card .d-flex {
+  min-width: 0;
+}
+
+.stat-card .d-flex>div:last-child {
+  min-width: 0;
+}
+
+@media (max-width: 991.98px) {
+  .stat-card h3 {
+    font-size: 1.25rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .stat-card h3 {
+    font-size: 1.4rem;
   }
 }

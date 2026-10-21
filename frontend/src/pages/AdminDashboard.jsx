@@ -88,7 +88,7 @@ const AdminDashboard = () => {
         <div className="col-12">
           <div className="row g-3 mb-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="col-3">
+              <div key={i} className="dash-stat-col">
                 <div className="card p-3 h-100">
                   <div className="d-flex gap-3 align-items-center">
                     <div className="skeleton" style={{ width: 48, height: 48, borderRadius: 4 }}></div>
@@ -105,7 +105,7 @@ const AdminDashboard = () => {
         <div className="col-12">
           <div className="row g-3 mb-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="col-3">
+              <div key={i} className="dash-stat-col">
                 <div className="card p-3 h-100">
                   <div className="d-flex gap-3 align-items-center">
                     <div className="skeleton" style={{ width: 48, height: 48, borderRadius: 4 }}></div>
@@ -171,7 +171,7 @@ const AdminDashboard = () => {
       {/* Sales KPIs */}
       <div className="col-12">
         <div className="row g-3 mb-4">
-          <div className="col-3">
+          <div className="dash-stat-col">
             <Link to="/sales" className="text-decoration-none">
               <div className="card p-3 h-100 stat-card" style={{ cursor: 'pointer' }}>
                 <div className="d-flex gap-3 align-items-center">
@@ -188,7 +188,7 @@ const AdminDashboard = () => {
             </Link>
           </div>
 
-          <div className="col-3">
+          <div className="dash-stat-col">
             <Link to="/sales" className="text-decoration-none">
               <div className="card p-3 h-100 stat-card" style={{ cursor: 'pointer' }}>
                 <div className="d-flex gap-3 align-items-center">
@@ -205,7 +205,7 @@ const AdminDashboard = () => {
             </Link>
           </div>
 
-          <div className="col-3">
+          <div className="dash-stat-col">
             <Link to="/sales" className="text-decoration-none">
               <div className="card p-3 h-100 stat-card" style={{ cursor: 'pointer' }}>
                 <div className="d-flex gap-3 align-items-center">
@@ -222,7 +222,7 @@ const AdminDashboard = () => {
             </Link>
           </div>
 
-          <div className="col-3">
+          <div className="dash-stat-col">
             <Link to="/sales" className="text-decoration-none">
               <div className="card p-3 h-100 stat-card" style={{ cursor: 'pointer' }}>
                 <div className="d-flex gap-3 align-items-center">
@@ -244,7 +244,7 @@ const AdminDashboard = () => {
       {/* Inventory & Users */}
       <div className="col-12">
         <div className="row g-3 mb-4">
-          <div className="col-3">
+          <div className="dash-stat-col">
             <Link to="/items" className="text-decoration-none">
               <div className="card p-3 h-100 stat-card" style={{ cursor: 'pointer' }}>
                 <div className="d-flex gap-3 align-items-center">
@@ -260,7 +260,7 @@ const AdminDashboard = () => {
             </Link>
           </div>
 
-          <div className="col-3">
+          <div className="dash-stat-col">
             <Link to="/stock" className="text-decoration-none">
               <div className="card p-3 h-100 stat-card" style={{ cursor: 'pointer' }}>
                 <div className="d-flex gap-3 align-items-center">
@@ -276,7 +276,7 @@ const AdminDashboard = () => {
             </Link>
           </div>
 
-          <div className="col-3">
+          <div className="dash-stat-col">
             <Link to="/stock" className="text-decoration-none">
               <div className="card p-3 h-100 stat-card" style={{ cursor: 'pointer' }}>
                 <div className="d-flex gap-3 align-items-center">
@@ -292,7 +292,7 @@ const AdminDashboard = () => {
             </Link>
           </div>
 
-          <div className="col-3">
+          <div className="dash-stat-col">
             <Link to="/users" className="text-decoration-none">
               <div className="card p-3 h-100 stat-card" style={{ cursor: 'pointer' }}>
                 <div className="d-flex gap-3 align-items-center">

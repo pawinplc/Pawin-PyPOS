@@ -203,8 +203,15 @@ const Account = () => {
           </div>
           <div className="card-body">
             <p className="mb-1"><strong>Pawin PyPOS</strong> - Stationery Inventory & POS System</p>
-            <p className="mb-1 text-muted small">Version 1.0.0</p>
-            <p className="mb-0 text-muted small">Built with React + FastAPI</p>
+            <p className="mb-3 text-muted small">Version 1.1.0.DTCPyPoS</p>
+            <div className="d-flex align-items-center gap-2">
+              <img
+                src="/fastapi_logo.png"
+                alt="FastAPI"
+                style={{ height: 30, width: 'auto' }}
+              />
+              <span className="text-muted small">Built on FastAPI</span>
+            </div>
           </div>
         </div>
       </div>
