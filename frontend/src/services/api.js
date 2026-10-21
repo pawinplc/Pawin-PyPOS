@@ -259,6 +259,9 @@ export const auditAPI = {
     const qs = query.toString();
     return request(`/api/audit/logs${qs ? `?${qs}` : ''}`);
   },
+  async getSessions(limit = 100) {
+    return request(`/api/audit/sessions?limit=${limit}`);
+  },
 };
 
 const downloadFile = async (path, fallbackName) => {

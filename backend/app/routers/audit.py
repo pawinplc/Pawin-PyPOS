@@ -7,8 +7,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.database import get_db
-from app.models.models import User, Sale, SaleItem, Debt, StockMovement, UserActivity
-from app.schemas.schemas import AuditLogResponse, AuditEntry
+from app.models.models import User, Sale, SaleItem, Debt, StockMovement, UserActivity, UserSession
+from app.schemas.schemas import (
+    AuditLogResponse, AuditEntry, LoginSessionResponse, LoginSessionsResponse
+)
 from app.routers.auth import get_current_active_user
 
 router = APIRouter(prefix="/api/audit", tags=["Audit Log"])
@@ -93,3 +95,80 @@ def get_audit_logs(
     entries = entries[:limit]
 
     return AuditLogResponse(entries=entries, total=len(entries))
+
+
+def _naive_utc(value):
+    if value is None:
+        return None
+    if value.tzinfo is not None:
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+    return value
+
+
+def _aware_utc(value):
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+@router.get("/sessions", response_model=LoginSessionsResponse)
+def get_login_sessions(
+    limit: int = Query(100, ge=1, le=500),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    if current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can view login sessions")
+
+    now = datetime.utcnow()
+    rows = (
+        db.query(UserSession)
+        .order_by(UserSession.login_at.desc())
+        .limit(limit)
+        .all()
+    )
+
+    sessions = []
+    active_count = 0
+    devices = set()
+
+    for s in rows:
+        expires_at = _naive_utc(s.expires_at)
+        logout_at = _naive_utc(s.logout_at)
+
+        if logout_at is not None:
+            session_status = "logged_out"
+        elif not s.is_active or (expires_at is not None and expires_at <= now):
+            session_status = "expired"
+        else:
+            session_status = "active"
+            active_count += 1
+
+        devices.add((s.user_id, s.device or s.user_agent or s.session_id))
+
+        sessions.append(LoginSessionResponse(
+            id=s.id,
+            user_id=s.user_id,
+            username=s.user.username if s.user else None,
+            full_name=s.user.full_name if s.user else None,
+            device=s.device,
+            browser=s.browser,
+            os=s.os,
+            device_type=s.device_type,
+            ip_address=s.ip_address,
+            login_at=_aware_utc(s.login_at),
+            last_seen_at=_aware_utc(s.last_seen_at),
+            logout_at=_aware_utc(s.logout_at),
+            expires_at=_aware_utc(s.expires_at),
+            status=session_status,
+            is_active=s.is_active,
+        ))
+
+    return LoginSessionsResponse(
+        sessions=sessions,
+        total=len(sessions),
+        active=active_count,
+        devices=len(devices),
+    )

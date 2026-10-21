@@ -244,3 +244,26 @@ class AuditEntry(BaseModel):
 class AuditLogResponse(BaseModel):
     entries: List[AuditEntry]
     total: int
+
+class LoginSessionResponse(BaseModel):
+    id: int
+    user_id: int
+    username: Optional[str] = None
+    full_name: Optional[str] = None
+    device: Optional[str] = None
+    browser: Optional[str] = None
+    os: Optional[str] = None
+    device_type: Optional[str] = None
+    ip_address: Optional[str] = None
+    login_at: datetime
+    last_seen_at: Optional[datetime] = None
+    logout_at: Optional[datetime] = None
+    expires_at: Optional[datetime] = None
+    status: str
+    is_active: bool
+
+class LoginSessionsResponse(BaseModel):
+    sessions: List[LoginSessionResponse]
+    total: int
+    active: int
+    devices: int

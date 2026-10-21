@@ -14,6 +14,11 @@ Newest release first.
 - Item-level Daily and Monthly sales reports with cost, profit, and margin.
 - Item-level Stock Arrival reports.
 - Backend Excel exports for Daily Sales, Monthly Sales, and Stock Arrivals.
+- Saved login devices and sessions: each login records device type, browser,
+  operating system, IP address, login time, last activity, expiry, and logout
+  time. Admins can open a full-width **Login Devices & Sessions** dialog from
+  the Audit Log page. Browser and OS are shown as icons.
+- Migration file: `backend/migrations/001_user_sessions.sql`.
 - Backend report endpoints for API/mobile clients:
   - `GET /api/reports/daily-sales/pdf`
   - `GET /api/reports/daily-sales/excel`

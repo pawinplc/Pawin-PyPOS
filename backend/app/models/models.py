@@ -106,6 +106,26 @@ class UserActivity(Base):
 
     user = relationship("User")
 
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(String(64), unique=True, nullable=False, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    device = Column(String(120))
+    browser = Column(String(60))
+    os = Column(String(60))
+    device_type = Column(String(20))
+    ip_address = Column(String(64))
+    user_agent = Column(String(500))
+    login_at = Column(DateTime(timezone=True), server_default=func.now())
+    last_seen_at = Column(DateTime(timezone=True), server_default=func.now())
+    logout_at = Column(DateTime(timezone=True))
+    expires_at = Column(DateTime(timezone=True))
+    is_active = Column(Boolean, default=True, nullable=False)
+
+    user = relationship("User")
+
 class Debt(Base):
     __tablename__ = "debts"
 

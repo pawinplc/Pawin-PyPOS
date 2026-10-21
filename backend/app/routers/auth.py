@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
+import re
 from typing import Optional
+from uuid import uuid4
 from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
@@ -7,7 +9,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import User, UserActivity
+from app.models.models import User, UserActivity, UserSession
 from app.schemas.schemas import Token, UserCreate, UserResponse, UserUpdate, LoginRequest
 from app.routers.auth_helpers import (
     verify_password, get_password_hash, create_access_token,
@@ -23,15 +25,104 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
+def get_client_ip(request: Request) -> Optional[str]:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else None
+
+
+def parse_user_agent(user_agent: Optional[str]) -> dict:
+    """Turn a raw User-Agent string into a readable device summary."""
+    ua = user_agent or ""
+
+    if "Edg/" in ua:
+        browser = "Microsoft Edge"
+    elif "OPR/" in ua or "Opera" in ua:
+        browser = "Opera"
+    elif "Chrome/" in ua and "Chromium/" not in ua:
+        browser = "Chrome"
+    elif "Chromium/" in ua:
+        browser = "Chromium"
+    elif "Firefox/" in ua:
+        browser = "Firefox"
+    elif "Safari/" in ua:
+        browser = "Safari"
+    elif "curl/" in ua.lower():
+        browser = "curl"
+    else:
+        browser = "Unknown browser"
+
+    android_version = re.search(r"Android\s+([0-9.]+)", ua)
+    ios_version = re.search(r"(?:iPhone )?OS\s+([0-9_]+)\s+like Mac OS X", ua)
+
+    if "Windows NT 10.0" in ua:
+        os_name = "Windows 10/11"
+    elif "Windows NT 6.3" in ua:
+        os_name = "Windows 8.1"
+    elif "Windows NT 6.1" in ua:
+        os_name = "Windows 7"
+    elif "Windows" in ua:
+        os_name = "Windows"
+    elif "Android" in ua:
+        os_name = f"Android {android_version.group(1)}" if android_version else "Android"
+    elif "iPhone" in ua:
+        os_name = "iOS"
+    elif "iPad" in ua:
+        os_name = "iPadOS"
+    elif "Mac OS X" in ua:
+        os_name = "macOS"
+    elif "CrOS" in ua:
+        os_name = "ChromeOS"
+    elif "Linux" in ua:
+        os_name = "Linux"
+    else:
+        os_name = "Unknown OS"
+
+    if "iPad" in ua or "Tablet" in ua:
+        device_type = "Tablet"
+    elif "Mobile" in ua or "iPhone" in ua or "Android" in ua:
+        device_type = "Mobile"
+    else:
+        device_type = "Desktop"
+
+    return {
+        "device": f"{browser} on {os_name}",
+        "browser": browser,
+        "os": os_name,
+        "device_type": device_type,
+    }
+
+
+def create_login_session(db: Session, user: User, request: Request) -> str:
+    session_id = uuid4().hex
+    info = parse_user_agent(request.headers.get("user-agent"))
+    now = datetime.utcnow()
+    db.add(UserSession(
+        session_id=session_id,
+        user_id=user.id,
+        device=info["device"],
+        browser=info["browser"],
+        os=info["os"],
+        device_type=info["device_type"],
+        ip_address=get_client_ip(request),
+        user_agent=request.headers.get("user-agent"),
+        login_at=now,
+        last_seen_at=now,
+        expires_at=now + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES),
+        is_active=True,
+    ))
+    db.commit()
+    return session_id
+
+
 def record_activity(db: Session, user: User, action: str, request: Request):
     try:
-        ip_address = request.client.host if request.client else None
-        user_agent = request.headers.get("user-agent")
         db.add(UserActivity(
             user_id=user.id,
             action=action,
-            ip_address=ip_address,
-            user_agent=user_agent
+            ip_address=get_client_ip(request),
+            user_agent=request.headers.get("user-agent")
         ))
         db.commit()
     except Exception:
@@ -51,12 +142,28 @@ def login(credentials: LoginRequest, request: Request, db: Session = Depends(get
     if not user.is_active:
         raise HTTPException(status_code=400, detail="Inactive user")
 
-    access_token = create_access_token(data={"sub": user.username})
+    session_id = create_login_session(db, user, request)
+    access_token = create_access_token(data={"sub": user.username, "sid": session_id})
     record_activity(db, user, "login", request)
     return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/logout")
 def logout(request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
+    auth_header = request.headers.get("authorization", "")
+    token = auth_header[7:] if auth_header.lower().startswith("bearer ") else None
+    if token:
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            session_id = payload.get("sid")
+            if session_id:
+                session = db.query(UserSession).filter(UserSession.session_id == session_id).first()
+                if session and session.is_active:
+                    session.is_active = False
+                    session.logout_at = datetime.utcnow()
+                    db.commit()
+        except JWTError:
+            pass
+
     record_activity(db, current_user, "logout", request)
     return {"message": "Logged out"}
 

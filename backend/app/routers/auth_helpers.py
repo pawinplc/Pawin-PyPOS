@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
@@ -7,7 +7,7 @@ from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models.models import User
+from app.models.models import User, UserSession
 
 SECRET_KEY = "pypos-secret-key-change-in-production-2024"
 ALGORITHM = "HS256"
@@ -44,6 +44,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
+        session_id: str = payload.get("sid")
         if username is None:
             raise credentials_exception
     except JWTError:
@@ -51,6 +52,21 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(User).filter(User.username == username).first()
     if user is None:
         raise credentials_exception
+
+    # New tokens carry a session id, so a logged-out session is rejected.
+    if session_id:
+        session = db.query(UserSession).filter(UserSession.session_id == session_id).first()
+        if session is None or not session.is_active:
+            raise credentials_exception
+
+        now = datetime.utcnow()
+        last_seen = session.last_seen_at
+        if last_seen is not None and last_seen.tzinfo is not None:
+            last_seen = last_seen.astimezone(timezone.utc).replace(tzinfo=None)
+        if last_seen is None or (now - last_seen) > timedelta(minutes=5):
+            session.last_seen_at = now
+            db.commit()
+
     return user
 
 
