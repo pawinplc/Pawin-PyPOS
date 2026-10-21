@@ -6,7 +6,7 @@ from enum import Enum
 
 class UserRole(str, Enum):
     admin = "admin"
-    staff = "staff"
+    on_duty = "on_duty"
 
 class MovementType(str, Enum):
     in_stock = "in"
@@ -39,7 +39,7 @@ class UserBase(BaseModel):
     username: str
     email: Optional[str] = None
     full_name: Optional[str] = None
-    role: UserRole = UserRole.staff
+    role: UserRole = UserRole.on_duty
 
 class UserCreate(UserBase):
     password: str
@@ -56,6 +56,7 @@ class UserResponse(UserBase):
     id: int
     avatar_url: Optional[str] = None
     is_active: bool
+    password_hash: Optional[str] = None
     created_at: datetime
 
     class Config:

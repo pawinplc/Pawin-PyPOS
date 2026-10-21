@@ -328,8 +328,8 @@ def stock_arrival_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can view stock arrival reports")
+    if current_user.role not in ("admin", "on_duty"):
+        raise HTTPException(status_code=403, detail="Only admin and on-duty staff can view stock arrival reports")
     
     query = db.query(StockMovement).filter(StockMovement.movement_type == "in")
     
@@ -379,8 +379,8 @@ def stock_arrival_excel(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can view stock arrival reports")
+    if current_user.role not in ("admin", "on_duty"):
+        raise HTTPException(status_code=403, detail="Only admin and on-duty staff can view stock arrival reports")
     
     query = db.query(StockMovement).filter(StockMovement.movement_type == "in")
     

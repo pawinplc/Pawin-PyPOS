@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { salesAPI, poll } from '../services/api';
+import { salesAPI } from '../services/api';
 import toast from 'react-hot-toast';
 
 const Sales = () => {
@@ -12,21 +12,6 @@ const Sales = () => {
 
   useEffect(() => {
     loadSales();
-    
-    // Poll for sales changes
-    const stopPolling = poll(() => {
-      loadSales();
-    }, 15000);
-    
-    // Auto-refresh every 10 seconds as backup
-    const interval = setInterval(() => {
-      loadSales();
-    }, 10000);
-    
-    return () => {
-      stopPolling();
-      clearInterval(interval);
-    };
   }, []);
 
   const loadSales = async (isRefresh = false) => {

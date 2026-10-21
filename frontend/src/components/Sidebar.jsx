@@ -32,7 +32,7 @@ const Sidebar = ({ alertCount = 0, collapsed = false, onToggle, isMobile = false
       items: [
         { path: '/sales', icon: 'ti-receipt', label: 'Sales' },
         { path: '/debts', icon: 'ti-wallet', label: 'Debt' },
-        { path: '/reports', icon: 'ti-chart-bar', label: 'Reports', adminOnly: true },
+        { path: '/reports', icon: 'ti-chart-bar', label: 'Reports' },
       ]
     },
     {

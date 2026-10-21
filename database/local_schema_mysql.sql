@@ -123,8 +123,8 @@ CREATE INDEX idx_debts_status ON debts(status);
 
 -- Insert default admin user (password: admin123 - bcrypt hashed)
 INSERT INTO users (username, email, password_hash, full_name, role) VALUES
-('admin', 'pawinplc2022@gmail.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4Q0y2w5P7.OoGzLe', 'System Admin', 'admin'),
-('cashier1', 'cashier1@pawin.com', '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4Q0y2w5P7.OoGzLe', 'Cashier One', 'staff')
+('admin', 'pawinplc2022@gmail.com', '$2b$12$Wg4rfVa1qf1bzuOu4U8AF.Pg.MCumsgGsHtU5MhC7XRlnqyyUV/vy', 'System Admin', 'admin'),
+('cashier1', 'cashier1@pawin.com', '$2b$12$Wg4rfVa1qf1bzuOu4U8AF.Pg.MCumsgGsHtU5MhC7XRlnqyyUV/vy', 'Cashier One', 'staff')
 ON DUPLICATE KEY UPDATE username = username;
 
 -- Insert sample categories

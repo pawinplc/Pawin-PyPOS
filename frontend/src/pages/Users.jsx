@@ -6,8 +6,14 @@ const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
+  const [showFullHash, setShowFullHash] = useState({});
   const [formData, setFormData] = useState({
-    email: '', password: '', full_name: '', role: 'staff'
+    email: '', password: '', full_name: '', role: 'on_duty'
+  });
+  const [editFormData, setEditFormData] = useState({
+    email: '', full_name: '', role: 'on_duty', password: ''
   });
 
   useEffect(() => {
@@ -31,13 +37,13 @@ const Users = () => {
   };
 
   const openModal = () => {
-    setFormData({ email: '', password: '', full_name: '', role: 'staff' });
+    setFormData({ email: '', password: '', full_name: '', role: 'on_duty' });
     setShowModal(true);
   };
 
   const closeModal = () => {
     setShowModal(false);
-    setFormData({ email: '', password: '', full_name: '', role: 'staff' });
+    setFormData({ email: '', password: '', full_name: '', role: 'on_duty' });
   };
 
   const handleSubmit = async (e) => {
@@ -80,6 +86,49 @@ const Users = () => {
     }
   };
 
+  const openEditModal = (user) => {
+    setEditingUser(user);
+    setEditFormData({
+      email: user.email || '',
+      full_name: user.full_name || '',
+      role: user.role || 'on_duty',
+      password: ''
+    });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingUser(null);
+    setEditFormData({ email: '', full_name: '', role: 'on_duty', password: '' });
+  };
+
+  const handleEditSubmit = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+
+    try {
+      setLoading(true);
+      const payload = {
+        email: editFormData.email,
+        full_name: editFormData.full_name,
+        role: editFormData.role
+      };
+      if (editFormData.password) {
+        payload.password = editFormData.password;
+      }
+      await usersAPI.update(editingUser.id, payload);
+      toast.success('User updated successfully');
+      closeEditModal();
+      loadUsers();
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast.error(error.message || 'Failed to update user');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getInitials = (name) => {
     if (!name) return 'U';
     return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -90,7 +139,7 @@ const Users = () => {
     return acc;
   }, {});
   const distinctRoles = Object.keys(roleCounts);
-  const roleLabels = { admin: 'Administrator', staff: 'Staff Member' };
+  const roleLabels = { admin: 'Administrator', on_duty: 'On Duty' };
 
   if (loading) {
     return (
@@ -182,6 +231,7 @@ const Users = () => {
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">User Profile</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Email Address</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Access Role</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Password Hash</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Status</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Joined</th>
                   <th className="px-4 py-3 text-end border-0"></th>
@@ -206,8 +256,25 @@ const Users = () => {
                       {user.role === 'admin' ? (
                         <span className="badge bg-danger-subtle text-danger border-0 px-2 py-1 rounded-pill small">Administrator</span>
                       ) : (
-                        <span className="badge bg-info-subtle text-info border-0 px-2 py-1 rounded-pill small">Staff Member</span>
+                        <span className="badge bg-info-subtle text-info border-0 px-2 py-1 rounded-pill small">{roleLabels[user.role] || user.role}</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <code
+                        className="small text-muted"
+                        style={{ cursor: 'pointer', wordBreak: 'break-all' }}
+                        title={showFullHash[user.id] ? 'Click to collapse' : 'Click to expand / copy'}
+                        onClick={() => {
+                          if (user.password_hash) {
+                            navigator.clipboard?.writeText(user.password_hash).catch(() => {});
+                          }
+                          setShowFullHash(prev => ({ ...prev, [user.id]: !prev[user.id] }));
+                        }}
+                      >
+                        {user.password_hash
+                          ? (showFullHash[user.id] ? user.password_hash : `${user.password_hash.slice(0, 12)}…`)
+                          : '—'}
+                      </code>
                     </td>
                     <td className="px-4 py-3">
                       <div className="d-flex align-items-center gap-1 text-success small fw-medium">
@@ -217,6 +284,13 @@ const Users = () => {
                     </td>
                     <td className="px-4 py-3 text-muted small">{new Date(user.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
                     <td className="px-4 py-3 text-end">
+                      <button 
+                        className="btn btn-sm btn-icon border-0 bg-light text-primary hover-up me-1" 
+                        onClick={() => openEditModal(user)}
+                        title="Edit User"
+                      >
+                        <i className="ti ti-pencil"></i>
+                      </button>
                       <button 
                         className="btn btn-sm btn-icon border-0 bg-light text-danger hover-up" 
                         onClick={() => handleDelete(user.id)}
@@ -276,7 +350,7 @@ const Users = () => {
                     value={formData.role}
                     onChange={(e) => setFormData({...formData, role: e.target.value})}
                   >
-                    <option value="staff">Staff</option>
+                    <option value="on_duty">On Duty</option>
                     <option value="admin">Admin</option>
                   </select>
                 </div>
@@ -298,6 +372,72 @@ const Users = () => {
                 </button>
                 <button type="submit" className="btn btn-primary">
                   Create User
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {showEditModal && editingUser && (
+        <div className="modal-overlay" onClick={closeEditModal}>
+          <div className="modal" style={{ maxWidth: 400 }} onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3 className="modal-title">Edit User</h3>
+              <button onClick={closeEditModal} className="modal-close">
+                <i className="ti ti-x"></i>
+              </button>
+            </div>
+            <form onSubmit={handleEditSubmit}>
+              <div className="modal-body">
+                <div className="form-group">
+                  <label className="form-label">Email *</label>
+                  <input
+                    type="email"
+                    className="form-control"
+                    value={editFormData.email}
+                    onChange={(e) => setEditFormData({...editFormData, email: e.target.value})}
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Full Name</label>
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={editFormData.full_name}
+                    onChange={(e) => setEditFormData({...editFormData, full_name: e.target.value})}
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Role *</label>
+                  <select
+                    className="form-select"
+                    value={editFormData.role}
+                    onChange={(e) => setEditFormData({...editFormData, role: e.target.value})}
+                  >
+                    <option value="on_duty">On Duty</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+                <div className="form-group mb-0">
+                  <label className="form-label">New Password <span className="text-muted fw-normal">(leave blank to keep)</span></label>
+                  <input
+                    type="password"
+                    className="form-control"
+                    value={editFormData.password}
+                    onChange={(e) => setEditFormData({...editFormData, password: e.target.value})}
+                    minLength={6}
+                    placeholder="••••••"
+                  />
+                </div>
+              </div>
+              <div className="modal-footer">
+                <button type="button" onClick={closeEditModal} className="btn btn-outline-secondary">
+                  Cancel
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Save Changes
                 </button>
               </div>
             </form>
