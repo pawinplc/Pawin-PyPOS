@@ -79,10 +79,11 @@ export const AuthProvider = ({ children }) => {
     await authAPI.changePassword(currentPassword, newPassword);
   };
 
-  const isAdmin = () => user?.role === 'admin';
+  const isAdmin = () => user?.role === 'admin' || user?.role === 'master_admin';
+  const isMasterAdmin = () => user?.role === 'master_admin';
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, updatePassword, isAdmin, setUser }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, updatePassword, isAdmin, isMasterAdmin, setUser }}>
       {children}
     </AuthContext.Provider>
   );

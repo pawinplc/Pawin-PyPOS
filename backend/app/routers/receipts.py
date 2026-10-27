@@ -9,7 +9,7 @@ from datetime import datetime
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from reportlab.lib import colors
 from reportlab.lib.units import mm
@@ -139,7 +139,7 @@ class _ReceiptLayout:
         except Exception:
             return
 
-        draw_width = CONTENT_WIDTH * 0.82
+        draw_width = CONTENT_WIDTH * 0.38
         draw_height = draw_width * img_h / img_w
         if self.c is not None:
             self.c.drawImage(
@@ -169,7 +169,7 @@ class _ReceiptLayout:
         )
 
 
-def _build_receipt(sale: Sale, cashier_name: str = None, c: canvas.Canvas = None):
+def _build_receipt(sale: Sale, cashier_name: str = None, customer_name: str = None, c: canvas.Canvas = None):
     """Draw the receipt and return the required page height (points)."""
     layout = _ReceiptLayout(c)
 
@@ -186,8 +186,10 @@ def _build_receipt(sale: Sale, cashier_name: str = None, c: canvas.Canvas = None
         layout.line(f"Date: {created_at.strftime('%d %b %Y, %I:%M %p')}", size=9)
     if cashier_name:
         layout.line(f"Cashier: {cashier_name}", size=9)
-    if sale.customer_name:
-        layout.line(f"Customer: {sale.customer_name}", size=9)
+    receipt_customer = (customer_name or "").strip() or sale.customer_name
+    if receipt_customer:
+        for line_text in _wrap(f"Customer: {receipt_customer}", "Helvetica", 9, CONTENT_WIDTH):
+            layout.line(line_text, size=9)
 
     layout.divider()
     layout.line("ITEM", "AMOUNT", size=8, bold=True, gap=1)
@@ -223,6 +225,7 @@ def _build_receipt(sale: Sale, cashier_name: str = None, c: canvas.Canvas = None
 @router.get("/{sale_id}/receipt.pdf")
 def sale_receipt_pdf(
     sale_id: int,
+    customer_name: str = Query(None, max_length=120),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
@@ -242,7 +245,7 @@ def sale_receipt_pdf(
     if sale.cashier:
         cashier_name = sale.cashier.full_name or sale.cashier.username
 
-    page_height = _build_receipt(sale, cashier_name)
+    page_height = _build_receipt(sale, cashier_name, customer_name)
     page_height = max(page_height, 120 * mm)
 
     buffer = BytesIO()
@@ -251,7 +254,7 @@ def sale_receipt_pdf(
     pdf.setAuthor(STORE_NAME)
     pdf.setSubject("Sales receipt")
     pdf.translate(0, page_height)
-    _build_receipt(sale, cashier_name, pdf)
+    _build_receipt(sale, cashier_name, customer_name, pdf)
     pdf.showPage()
     pdf.save()
     buffer.seek(0)

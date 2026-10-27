@@ -1,6 +1,7 @@
 # PyPOS Backend — Run Guide
 
-FastAPI + SQLAlchemy + MySQL backend for the PyPOS system.
+FastAPI + SQLAlchemy backend for the PyPOS system. Local development uses
+SQLite by default; production runs on MySQL.
 
 - App entry point: `app/main.py` (`app.main:app`)
 - Default local port: `8001` (from `.env`); `python app/main.py` hardcodes `8000`
@@ -13,7 +14,7 @@ FastAPI + SQLAlchemy + MySQL backend for the PyPOS system.
 | Requirement | Version / Notes |
 |---|---|
 | Python | 3.11+ (project venv uses 3.12) |
-| MySQL / MariaDB | 8.x / 10.x, reachable from the backend |
+| MySQL / MariaDB | Needed in production; optional locally (SQLite is the default) |
 | Git | optional |
 
 Check Python:
@@ -36,16 +37,20 @@ cp .env.example .env   # then edit values
 `.env` format:
 
 ```env
-# MySQL connection string (SQLAlchemy format)
-DATABASE_URL=mysql+pymysql://USER:PASSWORD@HOST:3306/DATABASE
+# Local development (SQLite file created in backend/)
+DATABASE_URL=sqlite:///./pypos_dev.db
+
+# Production / MySQL (SQLAlchemy format)
+# DATABASE_URL=mysql+pymysql://USER:PASSWORD@HOST:3306/DATABASE
 
 # Server bind address / port
 HOST=0.0.0.0
 PORT=8001
 ```
 
-> The database user needs `CREATE`, `ALTER`, `SELECT`, `INSERT`, `UPDATE`, `DELETE`
-> on the target schema if the app/import scripts create tables.
+> Start uvicorn from `backend/` so a relative SQLite path resolves correctly.
+> The database user needs `CREATE`, `ALTER`, `SELECT`, `INSERT`, `UPDATE`,
+> `DELETE` on the target schema if the app/import scripts create tables.
 
 ---
 
@@ -69,6 +74,20 @@ setup_backend.bat
 
 `requirements.txt` installs: FastAPI, Uvicorn, SQLAlchemy, PyMySQL,
 python-jose, passlib/bcrypt, pydantic, python-multipart, reportlab, openpyxl.
+
+### Create the local database (SQLite, first run)
+
+```bash
+python scripts/init_sqlite.py
+```
+
+This creates every table from the SQLAlchemy models (including
+`user_sessions`) and seeds an admin/cashier plus a small sample catalogue.
+Re-running it is safe. Default logins: `admin` (master admin,
+`master@pawinplc.com`) / `admin123` and `cashier1` / `admin123`.
+
+A full walk-through (including optional MySQL setup, frontend dev mode and
+troubleshooting) is in `../docs /RUN_BACKEND.md`.
 
 ---
 
@@ -146,7 +165,7 @@ The backend can generate reports server-side (PDF via ReportLab, Excel via openp
 | `GET /api/reports/stock-arrival/excel` | XLSX | date range |
 
 All require a Bearer token. Stock-arrival routes are restricted to
-`admin` and `on_duty` roles.
+`master_admin`, `admin` and `on_duty` roles.
 
 **Frontend usage:** the Excel exports download from the backend — the
 buttons in `frontend/src/pages/Reports.jsx` call `reportsAPI` in
@@ -281,6 +300,16 @@ location /api/ {
 ```
 
 ### Applying backend updates
+
+If the update includes a migration, run it once against the production database
+before restarting:
+
+```bash
+mysql -h 127.0.0.1 -u <user> -p <database> < migrations/001_user_sessions.sql
+mysql -h 127.0.0.1 -u <user> -p <database> < migrations/002_inventory_audit.sql
+mysql -h 127.0.0.1 -u <user> -p <database> < migrations/003_master_admin_role.sql
+mysql -h 127.0.0.1 -u <user> -p <database> < migrations/004_master_admin_email.sql
+```
 
 When backend code changes (e.g. `app/routers/reports.py`, `app/main.py`):
 

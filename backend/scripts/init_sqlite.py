@@ -68,11 +68,17 @@ SERVICES = [
 
 def seed_users(db):
     users = [
-        ("admin", "pawinplc2022@gmail.com", "System Admin", "admin"),
+        ("admin", "master@pawinplc.com", "System Admin", "master_admin"),
         ("cashier1", "cashier1@pawin.com", "Cashier One", "on_duty"),
     ]
     for username, email, full_name, role in users:
-        if db.query(models.User).filter(models.User.username == username).first():
+        existing = db.query(models.User).filter(models.User.username == username).first()
+        if existing:
+            if username == "admin":
+                if existing.role != "master_admin":
+                    existing.role = "master_admin"
+                if existing.email != email:
+                    existing.email = email
             continue
         db.add(
             models.User(
@@ -152,8 +158,8 @@ def main():
     finally:
         db.close()
 
-    print(f"\nLogin: admin / {DEFAULT_PASSWORD}")
-    print(f"       cashier1 / {DEFAULT_PASSWORD}")
+    print(f"\nMaster admin: master@pawinplc.com (username: admin) / {DEFAULT_PASSWORD}")
+    print(f"Cashier:      cashier1 / {DEFAULT_PASSWORD}")
 
 
 if __name__ == "__main__":

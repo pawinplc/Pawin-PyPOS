@@ -102,14 +102,14 @@ def create_pdf_buffer(title, headers, data, column_widths, report_date=None):
     logo = None
     if os.path.exists(LOGO_PATH):
         try:
-            logo = Image(LOGO_PATH, width=42, height=42)
+            logo = Image(LOGO_PATH, width=28, height=28)
         except Exception:
             logo = None
 
     if logo is not None:
         header_table = Table(
             [[logo, text_block]],
-            colWidths=[52, doc.width - 52],
+            colWidths=[38, doc.width - 38],
         )
         header_table.setStyle(TableStyle([
             ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
@@ -534,7 +534,7 @@ def stock_arrival_pdf(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    if current_user.role not in ("admin", "on_duty"):
+    if current_user.role not in ("admin", "master_admin", "on_duty"):
         raise HTTPException(status_code=403, detail="Only admin and on-duty staff can view stock arrival reports")
 
     movements = _stock_query(db, start_date, end_date).all()
@@ -563,7 +563,7 @@ def stock_arrival_excel(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    if current_user.role not in ("admin", "on_duty"):
+    if current_user.role not in ("admin", "master_admin", "on_duty"):
         raise HTTPException(status_code=403, detail="Only admin and on-duty staff can view stock arrival reports")
 
     movements = _stock_query(db, start_date, end_date).all()

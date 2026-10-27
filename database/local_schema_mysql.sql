@@ -123,7 +123,7 @@ CREATE INDEX idx_debts_status ON debts(status);
 
 -- Insert default admin user (password: admin123 - bcrypt hashed)
 INSERT INTO users (username, email, password_hash, full_name, role) VALUES
-('admin', 'pawinplc2022@gmail.com', '$2b$12$Wg4rfVa1qf1bzuOu4U8AF.Pg.MCumsgGsHtU5MhC7XRlnqyyUV/vy', 'System Admin', 'admin'),
+('admin', 'master@pawinplc.com', '$2b$12$Wg4rfVa1qf1bzuOu4U8AF.Pg.MCumsgGsHtU5MhC7XRlnqyyUV/vy', 'System Admin', 'master_admin'),
 ('cashier1', 'cashier1@pawin.com', '$2b$12$Wg4rfVa1qf1bzuOu4U8AF.Pg.MCumsgGsHtU5MhC7XRlnqyyUV/vy', 'Cashier One', 'staff')
 ON DUPLICATE KEY UPDATE username = username;
 
@@ -167,3 +167,20 @@ INSERT INTO items (name, sku, category_id, unit_price, quantity, min_stock_level
 ('Binding (per document)', 'BIND-001', (SELECT id FROM categories WHERE name = 'Stationery Services' LIMIT 1), 250, 9999, 0, 1),
 ('Color Copy (per page)', 'COPY-COLOR-001', (SELECT id FROM categories WHERE name = 'Stationery Services' LIMIT 1), 200, 9999, 0, 1)
 ON DUPLICATE KEY UPDATE name = name;
+
+-- Inventory CRUD audit log (items, categories, services)
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NULL,
+    username VARCHAR(50),
+    role VARCHAR(20),
+    action VARCHAR(30) NOT NULL,
+    entity_type VARCHAR(30) NOT NULL,
+    entity_id INT,
+    description VARCHAR(500),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX ix_audit_logs_user_id (user_id),
+    INDEX ix_audit_logs_entity_type (entity_type),
+    INDEX ix_audit_logs_created_at (created_at),
+    CONSTRAINT fk_audit_logs_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+);

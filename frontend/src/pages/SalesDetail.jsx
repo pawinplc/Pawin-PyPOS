@@ -10,6 +10,7 @@ const SalesDetail = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSale, setSelectedSale] = useState(null);
   const [downloadingReceipt, setDownloadingReceipt] = useState(false);
+  const [receiptCustomerName, setReceiptCustomerName] = useState('');
 
   useEffect(() => {
     loadSales();
@@ -60,7 +61,7 @@ const SalesDetail = () => {
     if (!selectedSale?.id) return;
     setDownloadingReceipt(true);
     try {
-      await salesAPI.downloadReceipt(selectedSale.id);
+      await salesAPI.downloadReceipt(selectedSale.id, receiptCustomerName);
       toast.success('Receipt downloaded');
     } catch (error) {
       toast.error(error.message || 'Failed to download receipt');
@@ -199,7 +200,10 @@ const SalesDetail = () => {
                     <td>
                       <button 
                         className="btn btn-sm btn-light"
-                        onClick={() => setSelectedSale(sale)}
+                        onClick={() => {
+                          setSelectedSale(sale);
+                          setReceiptCustomerName(sale.customer_name || '');
+                        }}
                       >
                         <i className="ti ti-eye"></i>
                       </button>
@@ -232,11 +236,14 @@ const SalesDetail = () => {
                 <img
                   src={`${import.meta.env.BASE_URL}pawin_logo_receipt.png`}
                   alt="PAWIN"
-                  style={{ width: 170, maxWidth: '85%', height: 'auto', marginBottom: 8 }}
+                  style={{ width: 108, maxWidth: '85%', height: 'auto', marginBottom: 8 }}
                 />
                 <h4 className="mb-1">PAWIN Stationery</h4>
                 <p className="text-muted mb-1 small">+255 664 834 083</p>
                 <p className="text-muted mb-0 small">{formatDate(selectedSale.created_at)}</p>
+                {receiptCustomerName.trim() && (
+                  <p className="text-muted mb-0 small">Customer: {receiptCustomerName.trim()}</p>
+                )}
               </div>
 
               <div className="border-bottom pb-3 mb-3">
@@ -266,6 +273,22 @@ const SalesDetail = () => {
               <div className="text-center mt-4 pt-3 border-top">
                 <p className="text-muted mb-1 small">Thank you for your purchase!</p>
                 <p className="text-muted mb-0" style={{ fontSize: '0.65rem', letterSpacing: '0.08em' }}>Powered by PyPOS</p>
+              </div>
+
+              <div className="mt-4 pt-3 border-top text-start">
+                <label htmlFor="sales-receipt-customer" className="form-label small fw-semibold mb-1">
+                  Customer name <span className="text-muted fw-normal">(optional)</span>
+                </label>
+                <input
+                  id="sales-receipt-customer"
+                  type="text"
+                  className="form-control form-control-sm"
+                  placeholder="e.g. John Doe"
+                  maxLength={120}
+                  value={receiptCustomerName}
+                  onChange={(e) => setReceiptCustomerName(e.target.value)}
+                />
+                <div className="form-text">Printed on the downloaded receipt only.</div>
               </div>
             </div>
             <div className="modal-footer">

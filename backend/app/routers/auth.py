@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.models import User, UserActivity, UserSession
 from app.schemas.schemas import Token, UserCreate, UserResponse, UserUpdate, LoginRequest
+from app.roles import is_master_admin
 from app.routers.auth_helpers import (
     verify_password, get_password_hash, create_access_token,
     get_current_user, get_current_active_user
@@ -173,8 +174,8 @@ def get_me(current_user: User = Depends(get_current_active_user)):
 
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can create users")
+    if not is_master_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only the master admin can create users")
 
     db_user = db.query(User).filter(User.username == user.username).first()
     if db_user:
@@ -200,20 +201,29 @@ def register(user: UserCreate, db: Session = Depends(get_db), current_user: User
 
 @router.get("/users", response_model=list[UserResponse])
 def get_users(db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can view users")
+    if not is_master_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only the master admin can view users")
     return db.query(User).all()
 
 @router.put("/users/{user_id}", response_model=UserResponse)
 def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can update users")
+    if not is_master_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only the master admin can update users")
 
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
     update_data = user.model_dump(exclude_unset=True)
+
+    new_role = update_data.get("role")
+    if db_user.role == "master_admin" and new_role and new_role != "master_admin":
+        master_count = db.query(User).filter(User.role == "master_admin").count()
+        if master_count <= 1:
+            raise HTTPException(status_code=400, detail="Cannot demote the last master admin")
+    if db_user.id == current_user.id and new_role and new_role != "master_admin":
+        raise HTTPException(status_code=400, detail="Cannot change your own master admin role")
+
     if "password" in update_data and update_data["password"]:
         update_data["password_hash"] = get_password_hash(update_data.pop("password"))
 
@@ -226,14 +236,18 @@ def update_user(user_id: int, user: UserUpdate, db: Session = Depends(get_db), c
 
 @router.delete("/users/{user_id}")
 def delete_user(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can delete users")
+    if not is_master_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only the master admin can delete users")
 
     db_user = db.query(User).filter(User.id == user_id).first()
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     if db_user.id == current_user.id:
         raise HTTPException(status_code=400, detail="Cannot delete your own account")
+    if db_user.role == "master_admin":
+        master_count = db.query(User).filter(User.role == "master_admin").count()
+        if master_count <= 1:
+            raise HTTPException(status_code=400, detail="Cannot delete the last master admin")
 
     db.delete(db_user)
     db.commit()

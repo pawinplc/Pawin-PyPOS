@@ -211,7 +211,7 @@ const Stock = ({ isAdmin = false }) => {
               <i className={`ti ti-refresh ${refreshing ? 'fa-spin' : ''}`}></i>
               {refreshing ? ' Refreshing...' : ' Refresh'}
             </button>
-            {!isAdmin && (
+            {isAdmin && (
               <>
                 <button className="btn btn-success" onClick={() => openModal('in')}>
                   <i className="ti ti-arrow-down"></i>

@@ -36,14 +36,14 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
-const AdminRoute = ({ children }) => {
-  const { user, isAdmin, loading } = useAuth();
+const MasterAdminRoute = ({ children }) => {
+  const { user, isMasterAdmin, loading } = useAuth();
 
   if (loading) {
     return <div className="page-loading">Loading...</div>;
   }
 
-  if (!user || !isAdmin()) {
+  if (!user || !isMasterAdmin()) {
     return <Navigate to="/" replace />;
   }
 
@@ -77,11 +77,11 @@ const AppRoutes = () => {
         <Route path="/items" element={<Items isAdmin={isAdmin()} />} />
         <Route path="/categories" element={<Categories isAdmin={isAdmin()} />} />
         <Route path="/stock" element={<Stock isAdmin={isAdmin()} />} />
-        <Route path="/users" element={<Users />} />
+        <Route path="/users" element={<MasterAdminRoute><Users /></MasterAdminRoute>} />
         <Route path="/account" element={<Account />} />
         <Route path="/analytics" element={<Analytics />} />
         <Route path="/debts" element={<Debts />} />
-        <Route path="/audit" element={<AdminRoute><AuditLog /></AdminRoute>} />
+        <Route path="/audit" element={<MasterAdminRoute><AuditLog /></MasterAdminRoute>} />
         <Route path="/sales/:period" element={<SalesDetail />} />
         <Route path="/dashboard" element={<Navigate to="/admin" replace />} />
       </Route>

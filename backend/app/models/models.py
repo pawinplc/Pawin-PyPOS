@@ -126,6 +126,24 @@ class UserSession(Base):
 
     user = relationship("User")
 
+class AuditLog(Base):
+    """Inventory CRUD history with the actor's role at the time of the action."""
+
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), index=True)
+    username = Column(String(50))
+    role = Column(String(20))
+    action = Column(String(30), nullable=False)
+    entity_type = Column(String(30), nullable=False, index=True)
+    entity_id = Column(Integer)
+    description = Column(String(500))
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user = relationship("User")
+
+
 class Debt(Base):
     __tablename__ = "debts"
 

@@ -7,24 +7,25 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 
 from app.database import get_db
-from app.models.models import User, Sale, SaleItem, Debt, StockMovement, UserActivity, UserSession
+from app.models.models import User, Sale, SaleItem, Debt, StockMovement, UserActivity, UserSession, AuditLog
 from app.schemas.schemas import (
     AuditLogResponse, AuditEntry, LoginSessionResponse, LoginSessionsResponse
 )
 from app.routers.auth import get_current_active_user
+from app.roles import is_master_admin
 
 router = APIRouter(prefix="/api/audit", tags=["Audit Log"])
 
 
 @router.get("/logs", response_model=AuditLogResponse)
 def get_audit_logs(
-    type: Optional[str] = Query(None, description="Filter: sale, debt, stock, auth"),
+    type: Optional[str] = Query(None, description="Filter: sale, debt, stock, inventory, auth"),
     limit: int = Query(100, ge=1, le=500),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can view audit logs")
+    if not is_master_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only the master admin can view audit logs")
 
     entries = []
 
@@ -40,6 +41,7 @@ def get_audit_logs(
                 amount=s.final_amount,
                 user_id=s.cashier_id,
                 username=s.cashier.username if s.cashier else None,
+                role=s.cashier.role if s.cashier else None,
                 created_at=s.created_at
             ))
 
@@ -66,7 +68,22 @@ def get_audit_logs(
                 description=f"{direction.capitalize()} {m.quantity} of {m.item.name if m.item else 'item'}",
                 user_id=m.user_id,
                 username=m.user.username if m.user else None,
+                role=m.user.role if m.user else None,
                 created_at=m.created_at
+            ))
+
+    if not type or type == "inventory":
+        changes = db.query(AuditLog).order_by(AuditLog.created_at.desc()).limit(limit).all()
+        for c in changes:
+            entries.append(AuditEntry(
+                id=c.id,
+                type="inventory",
+                action=f"{c.entity_type}_{c.action}",
+                description=c.description or "",
+                user_id=c.user_id,
+                username=c.username,
+                role=c.role,
+                created_at=c.created_at
             ))
 
     if not type or type == "auth":
@@ -80,6 +97,7 @@ def get_audit_logs(
                 description=f"User {action_label}",
                 user_id=a.user_id,
                 username=a.user.username if a.user else None,
+                role=a.user.role if a.user else None,
                 created_at=a.created_at
             ))
 
@@ -119,8 +137,8 @@ def get_login_sessions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user)
 ):
-    if current_user.role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can view login sessions")
+    if not is_master_admin(current_user):
+        raise HTTPException(status_code=403, detail="Only the master admin can view login sessions")
 
     now = datetime.utcnow()
     rows = (

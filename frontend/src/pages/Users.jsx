@@ -139,7 +139,12 @@ const Users = () => {
     return acc;
   }, {});
   const distinctRoles = Object.keys(roleCounts);
-  const roleLabels = { admin: 'Administrator', on_duty: 'On Duty' };
+  const roleLabels = { master_admin: 'Master Admin', admin: 'Administrator', on_duty: 'On Duty' };
+  const roleBadges = {
+    master_admin: 'bg-dark-subtle text-dark',
+    admin: 'bg-danger-subtle text-danger',
+    on_duty: 'bg-info-subtle text-info',
+  };
 
   if (loading) {
     return (
@@ -253,11 +258,9 @@ const Users = () => {
                     </td>
                     <td className="px-4 py-3 text-muted small">{user.email}</td>
                     <td className="px-4 py-3">
-                      {user.role === 'admin' ? (
-                        <span className="badge bg-danger-subtle text-danger border-0 px-2 py-1 rounded-pill small">Administrator</span>
-                      ) : (
-                        <span className="badge bg-info-subtle text-info border-0 px-2 py-1 rounded-pill small">{roleLabels[user.role] || user.role}</span>
-                      )}
+                      <span className={`badge ${roleBadges[user.role] || 'bg-info-subtle text-info'} border-0 px-2 py-1 rounded-pill small`}>
+                        {roleLabels[user.role] || user.role}
+                      </span>
                     </td>
                     <td className="px-4 py-3">
                       <code
@@ -352,6 +355,7 @@ const Users = () => {
                   >
                     <option value="on_duty">On Duty</option>
                     <option value="admin">Admin</option>
+                    <option value="master_admin">Master Admin</option>
                   </select>
                 </div>
                 <div className="form-group mb-0">
@@ -418,6 +422,7 @@ const Users = () => {
                   >
                     <option value="on_duty">On Duty</option>
                     <option value="admin">Admin</option>
+                    <option value="master_admin">Master Admin</option>
                   </select>
                 </div>
                 <div className="form-group mb-0">

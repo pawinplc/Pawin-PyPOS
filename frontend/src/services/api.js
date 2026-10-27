@@ -174,9 +174,11 @@ export const salesAPI = {
     return request(`/api/sales/${id}`);
   },
 
-  async downloadReceipt(id) {
+  async downloadReceipt(id, customerName) {
     const padded = String(id).padStart(5, '0');
-    return downloadFile(`/api/sales/${id}/receipt.pdf`, `receipt_${padded}.pdf`);
+    const name = customerName?.trim();
+    const query = name ? `?customer_name=${encodeURIComponent(name)}` : '';
+    return downloadFile(`/api/sales/${id}/receipt.pdf${query}`, `receipt_${padded}.pdf`);
   },
 };
 

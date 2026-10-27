@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models.models import User, Item, StockMovement
 from app.schemas.schemas import StockMovementCreate, StockMovementResponse
 from app.routers.auth import get_current_active_user
+from app.roles import is_admin
 
 router = APIRouter(prefix="/api/stock", tags=["Stock Management"])
 
@@ -42,7 +43,7 @@ def get_stock_movements(
 
 @router.post("/in", response_model=StockMovementResponse)
 def stock_in(movement: StockMovementCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    if current_user.role != "admin":
+    if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admin can add stock")
     
     item = db.query(Item).filter(Item.id == movement.item_id).first()
@@ -78,7 +79,7 @@ def stock_in(movement: StockMovementCreate, db: Session = Depends(get_db), curre
 
 @router.post("/out", response_model=StockMovementResponse)
 def stock_out(movement: StockMovementCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    if current_user.role != "admin":
+    if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admin can remove stock")
     
     item = db.query(Item).filter(Item.id == movement.item_id).first()
@@ -117,7 +118,7 @@ def stock_out(movement: StockMovementCreate, db: Session = Depends(get_db), curr
 
 @router.post("/adjust", response_model=StockMovementResponse)
 def adjust_stock(movement: StockMovementCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_active_user)):
-    if current_user.role != "admin":
+    if not is_admin(current_user):
         raise HTTPException(status_code=403, detail="Only admin can adjust stock")
     
     item = db.query(Item).filter(Item.id == movement.item_id).first()

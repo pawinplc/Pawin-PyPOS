@@ -202,7 +202,7 @@ const Account = () => {
             <h4 className="mb-0 h6">About PyPOS</h4>
           </div>
           <div className="card-body">
-            <p className="mb-1"><strong>Pawin PyPOS</strong> - Stationery Inventory & POS System</p>
+            <p className="mb-1"><strong>Powered by PyPOS</strong> - Stationery Inventory & POS System</p>
             <p className="mb-3 text-muted small">Version 1.1.0.DTCPyPoS</p>
             <div className="d-flex align-items-center gap-2">
               <img

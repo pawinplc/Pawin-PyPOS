@@ -6,7 +6,14 @@ const TYPE_META = {
   sale: { label: 'Sales', icon: 'ti-receipt', badge: 'bg-success-subtle text-success' },
   debt: { label: 'Debts', icon: 'ti-wallet', badge: 'bg-warning-subtle text-warning' },
   stock: { label: 'Stock Movements', icon: 'ti-archive', badge: 'bg-info-subtle text-info' },
+  inventory: { label: 'Inventory Changes', icon: 'ti-box', badge: 'bg-secondary-subtle text-secondary' },
   auth: { label: 'User Activity', icon: 'ti-user-check', badge: 'bg-primary-subtle text-primary' },
+};
+
+const ROLE_META = {
+  master_admin: { label: 'Master Admin', badge: 'bg-dark-subtle text-dark' },
+  admin: { label: 'Administrator', badge: 'bg-danger-subtle text-danger' },
+  on_duty: { label: 'On Duty', badge: 'bg-info-subtle text-info' },
 };
 
 const SESSION_STATUS_META = {
@@ -79,9 +86,9 @@ const AuditLog = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showSessions, setShowSessions] = useState(false);
 
-  const loadLogs = useCallback(async (isRefresh = false) => {
-    if (isRefresh) setRefreshing(true);
-    else setLoading(true);
+  const loadLogs = useCallback(async ({ refresh = false, silent = false } = {}) => {
+    if (refresh) setRefreshing(true);
+    else if (!silent) setLoading(true);
     try {
       const [data, sessionsData] = await Promise.all([
         auditAPI.getLogs(filter || undefined, 200),
@@ -105,7 +112,7 @@ const AuditLog = () => {
 
   useEffect(() => {
     loadLogs();
-    const stopPolling = poll(() => loadLogs(), 15000);
+    const stopPolling = poll(() => loadLogs({ silent: true }), 15000);
     return stopPolling;
   }, [loadLogs]);
 
@@ -122,6 +129,15 @@ const AuditLog = () => {
       stock_in: 'Stock added',
       stock_out: 'Stock removed',
       stock_adjustment: 'Stock adjusted',
+      item_created: 'Item created',
+      item_updated: 'Item updated',
+      item_deleted: 'Item deleted',
+      service_created: 'Service created',
+      service_updated: 'Service updated',
+      service_deleted: 'Service deleted',
+      category_created: 'Category created',
+      category_updated: 'Category updated',
+      category_deleted: 'Category deleted',
       login: 'User logged in',
       logout: 'User logged out',
     };
@@ -149,7 +165,7 @@ const AuditLog = () => {
         <div className="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
           <div>
             <h1 className="fs-3 fw-bold mb-1" style={{ color: 'var(--gray-900)' }}>Audit Log</h1>
-            <p className="text-muted mb-0 small">Sales, debts, stock movements, user activity, login devices &amp; sessions</p>
+            <p className="text-muted mb-0 small">Sales, debts, stock movements, inventory changes, user activity, login devices &amp; sessions</p>
           </div>
           <div className="d-flex align-items-center gap-2 flex-wrap">
             <button
@@ -164,7 +180,7 @@ const AuditLog = () => {
             </button>
             <button
               className="btn btn-outline-secondary btn-sm"
-              onClick={() => loadLogs(true)}
+              onClick={() => loadLogs({ refresh: true })}
               disabled={refreshing}
             >
               {refreshing ? (
@@ -214,24 +230,21 @@ const AuditLog = () => {
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Action</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Description</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Amount</th>
+                  <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Role</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">User</th>
                   <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Date &amp; Time</th>
                 </tr>
               </thead>
               <tbody>
-                {loading ? (
-                  [...Array(8)].map((_, i) => (
-                    <tr key={i}>
-                      {[...Array(6)].map((__, j) => (
-                        <td key={j} className="px-4 py-3">
-                          <div className="skeleton" style={{ width: 90, height: 14 }}></div>
-                        </td>
-                      ))}
-                    </tr>
-                  ))
+                {loading && entries.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="text-center py-5">
+                      <div className="spinner-border text-primary" role="status"></div>
+                    </td>
+                  </tr>
                 ) : entries.length === 0 ? (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={7}>
                       <div className="empty-state py-5 text-center">
                         <i className="ti ti-list fs-1 text-muted opacity-25"></i>
                         <p className="mt-2 text-muted fw-medium">No activities found</p>
@@ -253,6 +266,15 @@ const AuditLog = () => {
                         <td className="px-4 py-3 text-muted small">{entry.description}</td>
                         <td className="px-4 py-3 fw-semibold">
                           {entry.amount != null ? `TSH ${Number(entry.amount).toLocaleString()}` : '—'}
+                        </td>
+                        <td className="px-4 py-3">
+                          {entry.role ? (
+                            <span className={`badge ${ROLE_META[entry.role]?.badge || 'bg-light text-dark'} border-0 px-3 py-2 rounded-pill small`}>
+                              {ROLE_META[entry.role]?.label || entry.role}
+                            </span>
+                          ) : (
+                            <span className="text-muted">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           {entry.username ? (
@@ -309,28 +331,35 @@ const AuditLog = () => {
 
               <div className="card border-0 shadow-sm overflow-hidden">
                 <div className="table-responsive">
-                  <table className="table mb-0 text-nowrap table-hover align-middle">
+                  <table
+                    className="table mb-0 table-hover align-middle"
+                    style={{ tableLayout: 'fixed', minWidth: 980 }}
+                  >
+                    <colgroup>
+                      <col style={{ width: '20%' }} />
+                      <col style={{ width: '26%' }} />
+                      <col style={{ width: '14%' }} />
+                      <col style={{ width: '16%' }} />
+                      <col style={{ width: '12%' }} />
+                      <col style={{ width: '12%' }} />
+                    </colgroup>
                     <thead className="bg-light">
                       <tr>
-                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">User</th>
-                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Device</th>
-                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">IP Address</th>
-                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Login</th>
-                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Last Activity</th>
-                        <th className="px-4 py-3 text-uppercase small fw-bold text-muted border-0">Status</th>
+                        <th className="px-3 py-3 text-uppercase small fw-bold text-muted border-0">User</th>
+                        <th className="px-3 py-3 text-uppercase small fw-bold text-muted border-0">Device</th>
+                        <th className="px-3 py-3 text-uppercase small fw-bold text-muted border-0">IP Address</th>
+                        <th className="px-3 py-3 text-uppercase small fw-bold text-muted border-0">Login</th>
+                        <th className="px-3 py-3 text-uppercase small fw-bold text-muted border-0">Last Activity</th>
+                        <th className="px-3 py-3 text-uppercase small fw-bold text-muted border-0">Status</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {loading ? (
-                        [...Array(3)].map((_, i) => (
-                          <tr key={i}>
-                            {[...Array(6)].map((__, j) => (
-                              <td key={j} className="px-4 py-3">
-                                <div className="skeleton" style={{ width: 110, height: 14 }}></div>
-                              </td>
-                            ))}
-                          </tr>
-                        ))
+                      {loading && sessions.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="text-center py-5">
+                            <div className="spinner-border text-primary" role="status"></div>
+                          </td>
+                        </tr>
                       ) : sessions.length === 0 ? (
                         <tr>
                           <td colSpan={6}>
@@ -347,19 +376,24 @@ const AuditLog = () => {
                           const deviceIcon = DEVICE_ICON[session.device_type] || 'ti-device-desktop';
                           return (
                             <tr key={session.id}>
-                              <td className="px-4 py-3">
-                                <div className="fw-medium">{session.full_name || session.username || '—'}</div>
+                              <td className="px-3 py-3">
+                                <div className="fw-medium text-truncate" title={session.full_name || session.username || ''}>
+                                  {session.full_name || session.username || '—'}
+                                </div>
                                 {session.username && (
                                   <small className="text-muted">@{session.username}</small>
                                 )}
                               </td>
-                              <td className="px-4 py-3">
-                                <div className="d-flex align-items-center gap-2">
-                                  <span className="badge bg-light text-dark border rounded-2 p-2">
+                              <td className="px-3 py-3">
+                                <div className="d-flex align-items-center gap-2" style={{ minWidth: 0 }}>
+                                  <span className="badge bg-light text-dark border rounded-2 p-2 flex-shrink-0">
                                     <i className={`ti ${deviceIcon}`}></i>
                                   </span>
-                                  <div>
-                                    <div className="fw-medium small">
+                                  <div style={{ minWidth: 0 }}>
+                                    <div
+                                      className="fw-medium small text-truncate"
+                                      title={session.device_type || session.device || 'Unknown device'}
+                                    >
                                       {session.device_type || session.device || 'Unknown device'}
                                     </div>
                                     <div className="d-flex align-items-center gap-2 mt-1">
@@ -375,12 +409,14 @@ const AuditLog = () => {
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-4 py-3 text-muted small">{session.ip_address || '—'}</td>
-                              <td className="px-4 py-3 text-muted small">{formatTime(session.login_at)}</td>
-                              <td className="px-4 py-3 text-muted small" title={formatTime(session.last_seen_at)}>
+                              <td className="px-3 py-3 text-muted small text-truncate" title={session.ip_address || ''}>
+                                {session.ip_address || '—'}
+                              </td>
+                              <td className="px-3 py-3 text-muted small" title={formatTime(session.login_at)}>{formatTime(session.login_at)}</td>
+                              <td className="px-3 py-3 text-muted small" title={formatTime(session.last_seen_at)}>
                                 {timeAgo(session.last_seen_at)}
                               </td>
-                              <td className="px-4 py-3">
+                              <td className="px-3 py-3">
                                 <span className={`badge ${status.badge} border-0 px-3 py-2 rounded-pill small`}>
                                   {status.label}
                                 </span>

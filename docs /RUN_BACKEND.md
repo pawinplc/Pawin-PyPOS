@@ -84,8 +84,8 @@ Database: sqlite:////.../backend/pypos_dev.db
 Tables: categories, debts, items, sale_items, sales, stock_movements, user_activity, user_sessions, users
 Seed complete: 2 users, 7 categories, 23 items
 
-Login: admin / admin123
-       cashier1 / admin123
+Master admin: master@pawinplc.com (username: admin) / admin123
+Cashier:      cashier1 / admin123
 ```
 
 This creates `backend/pypos_dev.db` with:
@@ -97,10 +97,25 @@ This creates `backend/pypos_dev.db` with:
 
 | Login | Password |
 |---|---|
-| `admin` / `pawinplc2022@gmail.com` | `admin123` |
-| `cashier1` / `cashier1@pawin.com` | `admin123` |
+| `admin` (username) / `master@pawinplc.com` | `admin123` |
+| `cashier1` (username) | `admin123` |
 
-> Change these before using the app for anything real.
+> The seeded `admin` account has the **Master Admin** role.
+> `pawinplc2022@gmail.com` is intentionally left free so the master admin can
+> create a normal Admin with it.
+
+Role hierarchy (highest first):
+
+| Role | Access |
+|---|---|
+| `master_admin` | Everything, including **Users** and **Audit Log** |
+| `admin` | Everything except Users and Audit Log |
+| `on_duty` | POS, sales, reports, inventory viewing |
+
+See [`ROLES_AND_PERMISSIONS.md`](./ROLES_AND_PERMISSIONS.md) for accounts,
+permissions, audit behaviour and deployment steps.
+
+> Change the default passwords before using the app for anything real.
 
 ### 3.3 Reset the local database
 
@@ -126,8 +141,11 @@ FLUSH PRIVILEGES;
 ```bash
 mysql -h 127.0.0.1 -u pypos -p pypos < ../database/local_schema_mysql.sql
 mysql -h 127.0.0.1 -u pypos -p pypos < migrations/001_user_sessions.sql
+mysql -h 127.0.0.1 -u pypos -p pypos < migrations/002_inventory_audit.sql
+mysql -h 127.0.0.1 -u pypos -p pypos < migrations/003_master_admin_role.sql
+mysql -h 127.0.0.1 -u pypos -p pypos < migrations/004_master_admin_email.sql
 mysql -h 127.0.0.1 -u pypos -p pypos -e \
-  "UPDATE users SET role='on_duty' WHERE role NOT IN ('admin','on_duty');"
+  "UPDATE users SET role='on_duty' WHERE role='staff';"
 ```
 
 Then set `DATABASE_URL=mysql+pymysql://pypos:password@127.0.0.1:3306/pypos`
@@ -203,7 +221,7 @@ Log in and get a token:
 ```bash
 TOKEN=$(curl -s -X POST http://localhost:8001/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"admin","password":"admin123"}' | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
+  -d '{"email":"master@pawinplc.com","password":"admin123"}' | python -c "import sys,json;print(json.load(sys.stdin)['access_token'])")
 ```
 
 Use the token:
@@ -311,7 +329,7 @@ with the venv activated.
 
 ### Login fails / user has no permissions
 
-The API expects roles `admin` or `on_duty`. For MySQL, run the update in
+The API expects roles `master_admin`, `admin` or `on_duty`. For MySQL, run the update in
 section 3.4. For SQLite, re-run `scripts/init_sqlite.py` or delete the database
 and seed it again.
 

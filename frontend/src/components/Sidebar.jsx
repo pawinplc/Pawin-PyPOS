@@ -3,9 +3,10 @@ import { useAuth } from '../context/AuthContext';
 
 const Sidebar = ({ alertCount = 0, collapsed = false, onToggle, isMobile = false, mobileOpen = false }) => {
   const location = useLocation();
-  const { logout, isAdmin, user } = useAuth();
+  const { logout, isAdmin, isMasterAdmin, user } = useAuth();
 
   const isUserAdmin = isAdmin();
+  const isMaster = isMasterAdmin();
 
   const sidebarWidth = collapsed ? 60 : 240;
 
@@ -21,10 +22,10 @@ const Sidebar = ({ alertCount = 0, collapsed = false, onToggle, isMobile = false
     {
       title: 'Inventory',
       items: [
-        { path: '/services', icon: 'ti-printer', label: 'Services', adminOnly: true },
-        { path: '/items', icon: 'ti-box', label: 'Items', adminOnly: true, alertPath: '/items' },
-        { path: '/categories', icon: 'ti-tags', label: 'Categories', adminOnly: true },
-        { path: '/stock', icon: 'ti-archive', label: 'Stock', adminOnly: true, alertPath: '/stock' },
+        { path: '/services', icon: 'ti-printer', label: 'Services' },
+        { path: '/items', icon: 'ti-box', label: 'Items', alertPath: '/items' },
+        { path: '/categories', icon: 'ti-tags', label: 'Categories' },
+        { path: '/stock', icon: 'ti-archive', label: 'Stock', alertPath: '/stock' },
       ]
     },
     {
@@ -38,8 +39,8 @@ const Sidebar = ({ alertCount = 0, collapsed = false, onToggle, isMobile = false
     {
       title: 'System',
       items: [
-        ...(isUserAdmin ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
-        ...(isUserAdmin ? [{ path: '/audit', icon: 'ti-clipboard-list', label: 'Audit Log' }] : []),
+        ...(isMaster ? [{ path: '/users', icon: 'ti-users', label: 'Users' }] : []),
+        ...(isMaster ? [{ path: '/audit', icon: 'ti-clipboard-list', label: 'Audit Log' }] : []),
         { path: '/account', icon: 'ti-user-circle', label: 'Account' },
       ]
     }

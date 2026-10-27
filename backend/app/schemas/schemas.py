@@ -5,6 +5,7 @@ from decimal import Decimal
 from enum import Enum
 
 class UserRole(str, Enum):
+    master_admin = "master_admin"
     admin = "admin"
     on_duty = "on_duty"
 
@@ -239,6 +240,7 @@ class AuditEntry(BaseModel):
     amount: Optional[Decimal] = None
     user_id: Optional[int] = None
     username: Optional[str] = None
+    role: Optional[str] = None
     created_at: datetime
 
 class AuditLogResponse(BaseModel):

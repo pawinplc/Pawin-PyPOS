@@ -43,6 +43,7 @@ logs/
 *.sqlite
 *.sqlite3
 *.sql
+!migrations/*.sql
 *.sql.gz
 *.bak
 backups/
