@@ -189,6 +189,35 @@ curl -L "http://localhost:8001/api/reports/stock-arrival/pdf?start_date=2026-09-
 
 ---
 
+## 6b. Receipt PDFs
+
+Each completed sale can be downloaded as an 80 mm thermal receipt:
+
+| Endpoint | Format | Scope |
+|---|---|---|
+| `GET /api/sales/{sale_id}/receipt.pdf` | PDF (80 mm roll) | one sale |
+
+- Requires a Bearer token (any authenticated user).
+- Includes the PAWIN logo, store name/phone, receipt number, date, cashier,
+  customer, item lines, subtotal, discount, total, payment method and (for
+  credit sales) the balance due.
+- Branding can be overridden with `RECEIPT_STORE_NAME`, `RECEIPT_STORE_PHONE`,
+  `RECEIPT_CURRENCY`, `RECEIPT_FOOTER` and `RECEIPT_POWERED_BY` in
+  `backend/.env`.
+- The receipt logo is `backend/assets/receipt_logo.png` (a cropped copy of
+  `pawin_logo.png`). Keep it on the server when deploying.
+
+```bash
+curl -L "http://localhost:8001/api/sales/42/receipt.pdf" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -o receipt_00042.pdf
+```
+
+The frontend uses the same endpoint from the POS, Sales and Sales Detail
+receipt dialogs through `salesAPI.downloadReceipt(id)`.
+
+---
+
 ## 7. Data import (optional, one-off)
 
 Imports items and baseline stock from an Excel workbook:

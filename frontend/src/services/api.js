@@ -173,6 +173,11 @@ export const salesAPI = {
   async getById(id) {
     return request(`/api/sales/${id}`);
   },
+
+  async downloadReceipt(id) {
+    const padded = String(id).padStart(5, '0');
+    return downloadFile(`/api/sales/${id}/receipt.pdf`, `receipt_${padded}.pdf`);
+  },
 };
 
 export const dashboardAPI = {

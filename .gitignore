@@ -11,6 +11,11 @@ build/
 .env.local
 .env.*.local
 
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
+
 # IDE
 .vscode/
 .idea/

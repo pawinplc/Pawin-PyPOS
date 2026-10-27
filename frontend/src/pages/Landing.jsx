@@ -149,7 +149,7 @@ const Landing = () => {
             </section>
 
             <footer className="landing-footer">
-                <p>&copy; 2026 Pawin PLC. All rights reserved.</p>
+                <p>&copy; 2026 Powered by PyPOSv1</p>
             </footer>
         </div>
     );

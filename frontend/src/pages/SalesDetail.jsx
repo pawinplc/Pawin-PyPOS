@@ -9,6 +9,7 @@ const SalesDetail = () => {
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedSale, setSelectedSale] = useState(null);
+  const [downloadingReceipt, setDownloadingReceipt] = useState(false);
 
   useEffect(() => {
     loadSales();
@@ -52,6 +53,19 @@ const SalesDetail = () => {
       toast.error('Failed to load sales');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDownloadReceipt = async () => {
+    if (!selectedSale?.id) return;
+    setDownloadingReceipt(true);
+    try {
+      await salesAPI.downloadReceipt(selectedSale.id);
+      toast.success('Receipt downloaded');
+    } catch (error) {
+      toast.error(error.message || 'Failed to download receipt');
+    } finally {
+      setDownloadingReceipt(false);
     }
   };
 
@@ -215,8 +229,13 @@ const SalesDetail = () => {
             </div>
             <div className="modal-body">
               <div className="text-center border-bottom pb-3 mb-3">
-                <h4 className="mb-1">Pawin PyPOS</h4>
-                <p className="text-muted mb-1 small">Pawin PyPOS Stationery</p>
+                <img
+                  src={`${import.meta.env.BASE_URL}pawin_logo_receipt.png`}
+                  alt="PAWIN"
+                  style={{ width: 170, maxWidth: '85%', height: 'auto', marginBottom: 8 }}
+                />
+                <h4 className="mb-1">PAWIN Stationery</h4>
+                <p className="text-muted mb-1 small">+255 664 834 083</p>
                 <p className="text-muted mb-0 small">{formatDate(selectedSale.created_at)}</p>
               </div>
 
@@ -245,11 +264,24 @@ const SalesDetail = () => {
               </div>
 
               <div className="text-center mt-4 pt-3 border-top">
-                <p className="text-muted mb-0 small">Thank you for your purchase!</p>
+                <p className="text-muted mb-1 small">Thank you for your purchase!</p>
+                <p className="text-muted mb-0" style={{ fontSize: '0.65rem', letterSpacing: '0.08em' }}>Powered by PyPOS</p>
               </div>
             </div>
             <div className="modal-footer">
-              <button onClick={() => setSelectedSale(null)} className="btn btn-primary w-100">
+              <button
+                onClick={handleDownloadReceipt}
+                className="btn btn-outline-primary flex-grow-1"
+                disabled={downloadingReceipt}
+              >
+                {downloadingReceipt ? (
+                  <span className="spinner-border spinner-border-sm me-1"></span>
+                ) : (
+                  <i className="ti ti-download me-1"></i>
+                )}
+                Download
+              </button>
+              <button onClick={() => setSelectedSale(null)} className="btn btn-primary flex-grow-1">
                 Close
               </button>
             </div>

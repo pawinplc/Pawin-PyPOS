@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 import os
 
-from app.routers import auth, categories, items, stock, sales, reports, dashboard, debts, analytics, uploads, audit
+from app.routers import auth, categories, items, stock, sales, receipts, reports, dashboard, debts, analytics, uploads, audit
 
 app = FastAPI(
     title="PyPOS API",
@@ -29,6 +29,7 @@ app.include_router(categories.router)
 app.include_router(items.router)
 app.include_router(stock.router)
 app.include_router(sales.router)
+app.include_router(receipts.router)
 app.include_router(reports.router)
 app.include_router(dashboard.router)
 app.include_router(debts.router)
